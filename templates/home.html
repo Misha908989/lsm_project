@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Головна - LMS{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-5 rounded mb-5">
+    <div class="container text-center">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-graduation-cap"></i>
+            Ласкаво просимо до LMS!
+        </h1>
+        <p class="lead mb-4">Система управління навчанням для студентів та викладачів</p>
+        
+        {% if user.is_authenticated %}
+            <a href="{% url 'users:dashboard' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-tachometer-alt"></i> Мій кабінет
+            </a>
+        {% else %}
+            <a href="{% url 'users:register' %}" class="btn btn-light btn-lg me-2">
+                <i class="fas fa-user-plus"></i> Зареєструватися
+            </a>
+            <a href="{% url 'users:login' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Увійти
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-primary mb-3">
+                    <i class="fas fa-book-open fa-4x"></i>
+                </div>
+                <h4 class="card-title">Курси</h4>
+                <p class="card-text">Отримайте доступ до якісних навчальних курсів від досвідчених викладачів</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-success mb-3">
+                    <i class="fas fa-tasks fa-4x"></i>
+                </div>
+                <h4 class="card-title">Завдання</h4>
+                <p class="card-text">Виконуйте практичні завдання та отримуйте зворотний зв'язок від викладачів</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-warning mb-3">
+                    <i class="fas fa-certificate fa-4x"></i>
+                </div>
+                <h4 class="card-title">Сертифікати</h4>
+                <p class="card-text">Після завершення курсу отримайте офіційний сертифікат</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-light rounded p-5 mb-5">
+    <div class="row text-center">
+        <div class="col-md-4">
+            <h2 class="text-primary">
+                <i class="fas fa-users"></i>
+                <div class="display-4">{{ total_users|default:"0" }}</div>
+            </h2>
+            <p class="lead">Студентів</p>
+        </div>
+        <div class="col-md-4">
+            <h2 class="text-success">
+                <i class="fas fa-book"></i>
+                <div class="display-4">{{ total_courses|default:"0" }}</div>
+            </h2>
+            <p class="lead">Курсів</p>
+        </div>
+        <div class="col-md-4">
+            <h2 class="text-warning">
+                <i class="fas fa-graduation-cap"></i>
+                <div class="display-4">{{ total_certificates|default:"0" }}</div>
+            </h2>
+            <p class="lead">Сертифікатів</p>
+        </div>
+    </div>
+</div>
+
+<div class="mb-5">
+    <h2 class="text-center mb-4">Як це працює?</h2>
+    <div class="row">
+        <div class="col-md-3 text-center mb-3">
+            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <span class="display-6">1</span>
+            </div>
+            <h5>Реєстрація</h5>
+            <p class="text-muted">Створіть безкоштовний акаунт</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <span class="display-6">2</span>
+            </div>
+            <h5>Оберіть курс</h5>
+            <p class="text-muted">Запишіться на курс</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <div class="rounded-circle bg-warning text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <span class="display-6">3</span>
+            </div>
+            <h5>Навчайтеся</h5>
+            <p class="text-muted">Проходьте уроки та завдання</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <div class="rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <span class="display-6">4</span>
+            </div>
+            <h5>Отримайте сертифікат</h5>
+            <p class="text-muted">Завершіть курс успішно</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

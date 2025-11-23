@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Мій кабінет - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-tachometer-alt text-primary"></i> 
+        Мій кабінет
+    </h2>
+    <span class="badge bg-info">Студент</span>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x mb-2"></i>
+                <h3>{{ enrollments.count }}</h3>
+                <p class="mb-0">Мої курси</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-tasks fa-3x mb-2"></i>
+                <h3>{{ submissions.count }}</h3>
+                <p class="mb-0">Здані завдання</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-graduation-cap fa-3x mb-2"></i>
+                <h3>{{ certificates.count }}</h3>
+                <p class="mb-0">Сертифікатів</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x mb-2"></i>
+                <h3>85%</h3>
+                <p class="mb-0">Середній прогрес</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Мої курси -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-book"></i> Мої курси</h4>
+        <a href="#" class="btn btn-light btn-sm">
+            <i class="fas fa-plus"></i> Записатися на курс
+        </a>
+    </div>
+    <div class="card-body">
+        {% if enrollments %}
+            <div class="row">
+                {% for enrollment in enrollments %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ enrollment.course.title }}</h5>
+                            <p class="card-text text-muted">
+                                {{ enrollment.course.description|truncatewords:15 }}
+                            </p>
+                            
+                            <!-- Прогрес-бар -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Прогрес</small>
+                                    <small>{{ enrollment.progress }}%</small>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: {{ enrollment.progress }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ enrollment.course.instructor.username }}
+                                </small>
+                                <a href="#" class="btn btn-sm btn-primary">
+                                    Продовжити <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                Ви ще не записані на жоден курс. 
+                <a href="#" class="alert-link">Переглянути доступні курси</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Останні здані завдання -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0"><i class="fas fa-check-circle"></i> Останні здані завдання</h4>
+    </div>
+    <div class="card-body">
+        {% if submissions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Завдання</th>
+                            <th>Курс</th>
+                            <th>Статус</th>
+                            <th>Дата здачі</th>
+                            <th>Оцінка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for submission in submissions %}
+                        <tr>
+                            <td>{{ submission.assignment.title }}</td>
+                            <td>{{ submission.assignment.lesson.module.course.title }}</td>
+                            <td>
+                                {% if submission.status == 'graded' %}
+                                    <span class="badge bg-success">Оцінено</span>
+                                {% elif submission.status == 'pending' %}
+                                    <span class="badge bg-warning">На перевірці</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ submission.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ submission.submitted_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if submission.status == 'graded' %}
+                                    <strong class="text-success">
+                                        {{ submission.grade.score }}/{{ submission.assignment.max_score }}
+                                    </strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Ви ще не здали жодного завдання
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Мої сертифікати -->
+{% if certificates %}
+<div class="card shadow">
+    <div class="card-header bg-warning text-white">
+        <h4 class="mb-0"><i class="fas fa-certificate"></i> Мої сертифікати</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for certificate in certificates %}
+            <div class="col-md-4 mb-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-award fa-3x text-warning mb-3"></i>
+                        <h6>{{ certificate.course.title }}</h6>
+                        <small class="text-muted">
+                            Видано: {{ certificate.issued_at|date:"d.m.Y" }}
+                        </small>
+                        <hr>
+                        <a href="#" class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-download"></i> Завантажити
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

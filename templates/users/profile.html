@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Профіль - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Бокова панель -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" 
+                         alt="{{ user.username }}" 
+                         class="rounded-circle mb-3" 
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" 
+                         style="width: 150px; height: 150px;">
+                        <i class="fas fa-user fa-4x text-white"></i>
+                    </div>
+                {% endif %}
+                
+                <h3>{{ user.username }}</h3>
+                
+                {% if user.first_name or user.last_name %}
+                <p class="text-muted">{{ user.first_name }} {{ user.last_name }}</p>
+                {% endif %}
+                
+                <p>
+                    {% if user.profile.role == 'admin' %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-crown"></i> Адміністратор
+                        </span>
+                    {% elif user.profile.role == 'teacher' %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-chalkboard-teacher"></i> Викладач
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-user-graduate"></i> Студент
+                        </span>
+                    {% endif %}
+                </p>
+                
+                <hr>
+                
+                <div class="text-start">
+                    <p class="mb-2">
+                        <i class="fas fa-envelope text-primary"></i>
+                        <strong>Email:</strong><br>
+                        <small class="text-muted">{{ user.email }}</small>
+                    </p>
+                    
+                    {% if user.profile.phone %}
+                    <p class="mb-2">
+                        <i class="fas fa-phone text-success"></i>
+                        <strong>Телефон:</strong><br>
+                        <small class="text-muted">{{ user.profile.phone }}</small>
+                    </p>
+                    {% endif %}
+                    
+                    <p class="mb-2">
+                        <i class="fas fa-calendar text-warning"></i>
+                        <strong>Дата реєстрації:</strong><br>
+                        <small class="text-muted">{{ user.profile.created_at|date:"d.m.Y" }}</small>
+                    </p>
+                </div>
+                
+                <hr>
+                
+                <a href="{% url 'users:dashboard' %}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-tachometer-alt"></i> Мій кабінет
+                </a>
+                
+                {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}" class="btn btn-outline-danger w-100">
+                    <i class="fas fa-cog"></i> Адмін-панель
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Форма редагування -->
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit"></i> Редагувати профіль
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <h5 class="mb-3">
+                        <i class="fas fa-user-circle"></i> Основна інформація
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ім'я користувача</label>
+                            {{ user_form.username }}
+                            {% if user_form.username.errors %}
+                                <div class="text-danger small">{{ user_form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            {{ user_form.email }}
+                            {% if user_form.email.errors %}
+                                <div class="text-danger small">{{ user_form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ім'я</label>
+                            {{ user_form.first_name }}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Прізвище</label>
+                            {{ user_form.last_name }}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle"></i> Додаткова інформація
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Біографія</label>
+                        {{ profile_form.bio }}
+                        {% if profile_form.bio.errors %}
+                            <div class="text-danger small">{{ profile_form.bio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        {{ profile_form.phone }}
+                        {% if profile_form.phone.errors %}
+                            <div class="text-danger small">{{ profile_form.phone.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Аватар</label>
+                        {{ profile_form.avatar }}
+                        {% if profile_form.avatar.errors %}
+                            <div class="text-danger small">{{ profile_form.avatar.errors }}</div>
+                        {% endif %}
+                        {% if user.profile.avatar %}
+                            <small class="form-text text-muted d-block mt-1">
+                                Поточний аватар: 
+                                <a href="{{ user.profile.avatar.url }}" target="_blank">Переглянути</a>
+                            </small>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Зберегти зміни
+                        </button>
+                        <a href="{% url 'users:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

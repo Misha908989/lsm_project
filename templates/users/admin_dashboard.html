@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Адмін-панель - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-crown text-danger"></i> 
+        Панель адміністратора
+    </h2>
+    <span class="badge bg-danger">Адміністратор</span>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x mb-2"></i>
+                <h3>{{ total_users }}</h3>
+                <p class="mb-0">Користувачів</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'admin:auth_user_changelist' %}" class="text-white text-decoration-none small">
+                    Переглянути <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x mb-2"></i>
+                <h3>{{ total_courses }}</h3>
+                <p class="mb-0">Курсів</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'admin:courses_course_changelist' %}" class="text-white text-decoration-none small">
+                    Переглянути <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-user-graduate fa-3x mb-2"></i>
+                <h3>{{ total_enrollments }}</h3>
+                <p class="mb-0">Записів на курси</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'admin:courses_enrollment_changelist' %}" class="text-white text-decoration-none small">
+                    Переглянути <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-certificate fa-3x mb-2"></i>
+                <h3>{{ total_certificates|default:0 }}</h3>
+                <p class="mb-0">Сертифікатів</p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'admin:assignments_certificate_changelist' %}" class="text-white text-decoration-none small">
+                    Переглянути <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Швидкі дії -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0"><i class="fas fa-bolt"></i> Швидкі дії</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin:courses_course_add' %}" class="btn btn-primary w-100 btn-lg">
+                            <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                            Створити курс
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin:auth_user_add' %}" class="btn btn-success w-100 btn-lg">
+                            <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                            Додати користувача
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin:courses_announcement_add' %}" class="btn btn-info w-100 btn-lg">
+                            <i class="fas fa-bullhorn fa-2x d-block mb-2"></i>
+                            Створити оголошення
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin:index' %}" class="btn btn-danger w-100 btn-lg">
+                            <i class="fas fa-cog fa-2x d-block mb-2"></i>
+                            Адмін-панель
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Останні користувачі -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Останні користувачі</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Список останніх зареєстрованих користувачів</p>
+                <a href="{% url 'admin:auth_user_changelist' %}" class="btn btn-outline-primary btn-sm">
+                    Переглянути всіх <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-book"></i> Останні курси</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Список нещодавно створених курсів</p>
+                <a href="{% url 'admin:courses_course_changelist' %}" class="btn btn-outline-success btn-sm">
+                    Переглянути всі <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Системна інформація -->
+<div class="card shadow">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Системна інформація</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Django версія:</strong>
+                <p class="text-muted">5.x</p>
+            </div>
+            <div class="col-md-4">
+                <strong>Python версія:</strong>
+                <p class="text-muted">3.x</p>
+            </div>
+            <div class="col-md-4">
+                <strong>База даних:</strong>
+                <p class="text-muted">SQLite</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

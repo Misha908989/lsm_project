@@ -81,7 +81,13 @@
                                     <small>{{ enrollment.progress }}%</small>
                                 </div>
                                 <div class="progress">
-                                    <div class="progress-bar bg-success" style="width: {{ enrollment.progress }}%"></div>
+                                    <div class="progress-bar bg-success" 
+                                        role="progressbar" 
+                                        data-progress="{{ enrollment.progress }}"
+                                        aria-valuenow="{{ enrollment.progress }}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                    </div>
                                 </div>
                             </div>
                             
@@ -192,4 +198,12 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.progress-bar').forEach(function(bar) {
+    const progress = bar.getAttribute('data-progress');
+    bar.style.width = progress + '%';
+});
+</script>
 {% endblock %}

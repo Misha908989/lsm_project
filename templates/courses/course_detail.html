@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ course.title }} - LMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Основна інформація -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <!-- Обкладинка -->
+            {% if course.thumbnail %}
+            <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
+            {% else %}
+            <div class="bg-gradient-primary text-white p-5 text-center">
+                <i class="fas fa-book fa-5x mb-3"></i>
+                <h2>{{ course.title }}</h2>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <!-- Заголовок та кнопки редагування -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h2 class="card-title mb-2">{{ course.title }}</h2>
+                        <p class="text-muted">
+                            <i class="fas fa-user"></i> Викладач: 
+                            <strong>{{ course.instructor.get_full_name|default:course.instructor.username }}</strong>
+                        </p>
+                    </div>
+                    
+                    {% if user.profile.role == 'admin' or user == course.instructor %}
+                    <div class="btn-group">
+                        <a href="{% url 'courses:course_update' course.slug %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Редагувати
+                        </a>
+                        {% if user.profile.role == 'admin' %}
+                        <a href="{% url 'courses:course_delete' course.slug %}" 
+                           class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Видалити
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Бейджі -->
+                <div class="mb-3">
+                    <span class="badge bg-primary">{{ course.get_level_display }}</span>
+                    <span class="badge bg-info">{{ course.duration }} годин</span>
+                    {% if course.price == 0 %}
+                    <span class="badge bg-success">Безкоштовно</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">{{ course.price }} грн</span>
+                    {% endif %}
+                    {% if not course.is_published %}
+                    <span class="badge bg-danger">Не опубліковано</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Опис -->
+                <div class="mb-4">
+                    <h4>Опис курсу</h4>
+                    <p class="lead">{{ course.description|linebreaks }}</p>
+                </div>
+                
+                <!-- Статистика -->
+                <div class="row text-center mb-4">
+                    <div class="col-md-3 mb-2">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h5>{{ enrollments_count }}</h5>
+                            <small class="text-muted">Студентів</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-book-open fa-2x text-success mb-2"></i>
+                            <h5>{{ modules_count }}</h5>
+                            <small class="text-muted">Модулів</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-file-alt fa-2x text-info mb-2"></i>
+                            <h5>{{ lessons_count }}</h5>
+                            <small class="text-muted">Уроків</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
+                            <h5>{{ assignments_count }}</h5>
+                            <small class="text-muted">Завдань</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Програма курсу -->
+                <h4 class="mb-3">Програма курсу</h4>
+                {% if modules %}
+                <div class="accordion" id="modulesAccordion">
+                    {% for module in modules %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse{{ module.id }}">
+                                <strong>{{ module.order }}. {{ module.title }}</strong>
+                                <span class="badge bg-secondary ms-2">
+                                    {{ module.lesson_set.count }} уроків
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ module.id }}" 
+                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                             data-bs-parent="#modulesAccordion">
+                            <div class="accordion-body">
+                                <p class="text-muted">{{ module.description }}</p>
+                                
+                                {% if module.lesson_set.exists %}
+                                <ul class="list-group list-group-flush">
+                                    {% for lesson in module.lesson_set.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-play-circle text-primary"></i>
+                                            {{ lesson.order }}. {{ lesson.title }}
+                                            {% if lesson.duration_minutes %}
+                                            <small class="text-muted">({{ lesson.duration_minutes }} хв)</small>
+                                            {% endif %}
+                                        </div>
+                                        {% if is_enrolled or user.profile.role in 'teacher,admin' %}
+                                        <a href="{% url 'lessons:lesson_detail' lesson.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Переглянути
+                                        </a>
+                                        {% else %}
+                                        <i class="fas fa-lock text-muted"></i>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mb-0"><i>Уроки ще не додані</i></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Модулі курсу ще не додані
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Бічна панель -->
+    <div class="col-lg-4">
+        <!-- Дії з курсом -->
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                {% if user.is_authenticated %}
+                    {% if is_enrolled %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Ви записані на цей курс
+                        </div>
+                        
+                        {% if enrollment %}
+                        <div class="mb-3">
+                            <h6>Ваш прогрес</h6>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar bg-success" 
+                                     role="progressbar" 
+                                     style="width: {{ enrollment.progress }}%"
+                                     aria-valuenow="{{ enrollment.progress }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ enrollment.progress }}%
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{% url 'courses:my_courses' %}" 
+                           class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-graduation-cap"></i> Продовжити навчання
+                        </a>
+                        
+                        {% if user.profile.role == 'student' %}
+                        <form method="post" action="{% url 'courses:course_unenroll' course.slug %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="btn btn-outline-danger w-100" 
+                                    onclick="return confirm('Ви впевнені?')">
+                                <i class="fas fa-sign-out-alt"></i> Відписатися
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        {% if user.profile.role == 'student' %}
+                            {% if course.is_published %}
+                            <form method="post" action="{% url 'courses:course_enroll' course.slug %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="fas fa-user-plus"></i> Записатися на курс
+                                </button>
+                            </form>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Курс ще не опубліковано
+                            </div>
+                            {% endif %}
+                        {% elif user.profile.role in 'teacher,admin' %}
+                            {% if user == course.instructor or user.profile.role == 'admin' %}
+                            <a href="{% url 'courses:manage_modules' course.slug %}" 
+                               class="btn btn-info w-100 mb-2">
+                                <i class="fas fa-list"></i> Управління модулями
+                            </a>
+                            <a href="{% url 'courses:teacher_statistics' course.slug %}" 
+                               class="btn btn-primary w-100">
+                                <i class="fas fa-chart-bar"></i> Статистика курсу
+                            </a>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Це курс іншого викладача
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                <div class="alert alert-warning">
+                    <p><i class="fas fa-sign-in-alt"></i></p>
+                    <p><a href="{% url 'users:login' %}">Увійдіть</a> або 
+                    <a href="{% url 'users:register' %}">зареєструйтесь</a></p>
+                    <p class="mb-0">для запису на курс</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Викладач -->
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">Викладач</h5>
+                {% if course.instructor.profile.avatar %}
+                <img src="{{ course.instructor.profile.avatar.url }}" 
+                     class="rounded-circle mb-3" 
+                     width="100" 
+                     height="100" 
+                     alt="{{ course.instructor.username }}">
+                {% else %}
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 100px; height: 100px; font-size: 2rem;">
+                    {{ course.instructor.first_name.0|default:course.instructor.username.0|upper }}
+                </div>
+                {% endif %}
+                <h6>{{ course.instructor.get_full_name|default:course.instructor.username }}</h6>
+                {% if course.instructor.profile.bio %}
+                <p class="text-muted small">{{ course.instructor.profile.bio|truncatewords:20 }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Оголошення -->
+        {% if announcements %}
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-bullhorn text-warning"></i> Оголошення
+                </h5>
+                {% for announcement in announcements %}
+                <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                    <h6 class="mb-1">
+                        {{ announcement.title }}
+                        {% if announcement.is_pinned %}
+                        <i class="fas fa-thumbtack text-danger"></i>
+                        {% endif %}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> 
+                        {{ announcement.created_at|date:"d.m.Y H:i" }}
+                    </small>
+                    <p class="mb-0 mt-2">{{ announcement.content|truncatewords:30 }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Статистика - {{ course.title }} - LMS{% endblock %}
+
+{% block content %}
+<!-- Заголовок -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>
+            <i class="fas fa-chart-bar text-primary"></i> Статистика курсу
+        </h2>
+        <p class="text-muted mb-0">Курс: <strong>{{ course.title }}</strong></p>
+    </div>
+    <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Назад до курсу
+    </a>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                <h3>{{ total_students }}</h3>
+                <p class="text-muted mb-0">Студентів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-book-open fa-3x text-success mb-2"></i>
+                <h3>{{ modules_count }}</h3>
+                <p class="text-muted mb-0">Модулів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x text-info mb-2"></i>
+                <h3>{{ lessons_count }}</h3>
+                <p class="text-muted mb-0">Уроків</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <i class="fas fa-tasks fa-3x text-warning mb-2"></i>
+                <h3>{{ assignments_count }}</h3>
+                <p class="text-muted mb-0">Завдань</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список студентів -->
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            <i class="fas fa-users"></i> Записані студенти ({{ total_students }})
+        </h4>
+    </div>
+    
+    <div class="card-body">
+        {% if enrollments %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user"></i> Студент</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-chart-line"></i> Прогрес</th>
+                        <th><i class="fas fa-calendar"></i> Дата запису</th>
+                        <th><i class="fas fa-cog"></i> Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <!-- Студент -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if enrollment.student.profile.avatar %}
+                                <img src="{{ enrollment.student.profile.avatar.url }}" 
+                                     class="rounded-circle me-2" 
+                                     width="40" 
+                                     height="40"
+                                     alt="{{ enrollment.student.username }}">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 40px; height: 40px;">
+                                    {{ enrollment.student.first_name.0|default:enrollment.student.username.0|upper }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>
+                                        {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">@{{ enrollment.student.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Email -->
+                        <td>{{ enrollment.student.email }}</td>
+                        
+                        <!-- Прогрес -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                    <div class="progress-bar 
+                                                {% if enrollment.progress < 30 %}bg-danger
+                                                {% elif enrollment.progress < 70 %}bg-warning
+                                                {% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ enrollment.progress }}%">
+                                    </div>
+                                </div>
+                                <strong>{{ enrollment.progress }}%</strong>
+                            </div>
+                        </td>
+                        
+                        <!-- Дата запису -->
+                        <td>
+                            <small>{{ enrollment.enrolled_at|date:"d.m.Y H:i" }}</small>
+                        </td>
+                        
+                        <!-- Дії -->
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#studentModal{{ enrollment.id }}">
+                                <i class="fas fa-eye"></i> Деталі
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+            <p class="text-muted">На цей курс ще не записано жодного студента</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Структура курсу -->
+<div class="card shadow mt-4">
+    <div class="card-header bg-info text-white">
+        <h4 class="mb-0">
+            <i class="fas fa-sitemap"></i> Структура курсу
+        </h4>
+    </div>
+    
+    <div class="card-body">
+        {% if modules %}
+        <div class="accordion" id="modulesAccordion">
+            {% for module in modules %}
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#module{{ module.id }}">
+                        <strong>{{ module.order }}. {{ module.title }}</strong>
+                        <span class="badge bg-secondary ms-2">
+                            {{ module.lesson_set.count }} уроків
+                        </span>
+                    </button>
+                </h2>
+                <div id="module{{ module.id }}" 
+                     class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                     data-bs-parent="#modulesAccordion">
+                    <div class="accordion-body">
+                        {% if module.lesson_set.exists %}
+                        <ul class="list-group list-group-flush">
+                            {% for lesson in module.lesson_set.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-play-circle text-primary"></i>
+                                    {{ lesson.order }}. {{ lesson.title }}
+                                    {% if lesson.duration_minutes %}
+                                    <small class="text-muted">({{ lesson.duration_minutes }} хв)</small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if lesson.is_published %}
+                                    <span class="badge bg-success">Опубліковано</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Чернетка</span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">Уроки ще не додані</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Модулі ще не додані</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

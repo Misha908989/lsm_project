@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Медіафайли - {{ lesson.title }} - LMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Заголовок -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>
+                    <i class="fas fa-paperclip text-primary"></i> Управління медіафайлами
+                </h2>
+                <p class="text-muted mb-0">Урок: <strong>{{ lesson.title }}</strong></p>
+            </div>
+            <a href="{% url 'lessons:lesson_detail' lesson.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Назад до уроку
+            </a>
+        </div>
+        
+        <!-- Форма -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-upload"></i> Медіафайли уроку
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    
+                    <!-- Помилки formset -->
+                    {% if formset.non_form_errors %}
+                    <div class="alert alert-danger">
+                        {{ formset.non_form_errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Список медіафайлів -->
+                    <div id="media-container">
+                        {% for form in formset %}
+                        <div class="media-form card mb-3">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        Файл #{{ forloop.counter }}
+                                    </h5>
+                                    {% if form.instance.pk %}
+                                    <span class="badge bg-info">Існуючий файл</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Новий файл</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- Помилки форми -->
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                        <div>{{ field.label }}: {{ error }}</div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Прихований ID -->
+                                {{ form.id }}
+                                
+                                <!-- Поточний файл -->
+                                {% if form.instance.file %}
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas {{ form.instance.get_file_icon }} fa-2x float-start me-3"></i>
+                                    <strong>Поточний файл:</strong><br>
+                                    <a href="{{ form.instance.file.url }}" target="_blank">
+                                        {{ form.instance.file.name }}
+                                    </a>
+                                    <br>
+                                    <small>
+                                        Розмір: {{ form.instance.get_file_size_display }} | 
+                                        Тип: {{ form.instance.get_file_type_display }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="row">
+                                    <!-- Назва файлу -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                                            Назва файлу <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.title }}
+                                    </div>
+                                    
+                                    <!-- Тип файлу -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.file_type.id_for_label }}" class="form-label">
+                                            Тип файлу <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.file_type }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Опис -->
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Опис файлу
+                                    </label>
+                                    {{ form.description }}
+                                </div>
+                                
+                                <!-- Файл -->
+                                <div class="mb-3">
+                                    <label for="{{ form.file.id_for_label }}" class="form-label">
+                                        {% if form.instance.pk %}Замінити файл{% else %}Файл{% endif %}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.file }}
+                                    <small class="form-text text-muted">
+                                        Дозволені формати: PDF, DOC, DOCX, PPT, PPTX, JPG, PNG, GIF, MP4, AVI, ZIP
+                                    </small>
+                                </div>
+                                
+                                <!-- Видалення -->
+                                {% if form.instance.pk %}
+                                <div class="form-check">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                        <i class="fas fa-trash"></i> Видалити цей файл
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Інформаційне повідомлення -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Підказка:</strong> Ви можете додати презентації, документи, зображення та інші матеріали, які допоможуть студентам краще засвоїти матеріал.
+                    </div>
+                    
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'lessons:lesson_detail' lesson.id %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Зберегти медіафайли
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Підказки -->
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Підказки
+                </h5>
+                <ul class="mb-0">
+                    <li>Додавайте презентації (PPT, PPTX) для слайдів уроку</li>
+                    <li>Завантажуйте документи (PDF, DOC, DOCX) з конспектами</li>
+                    <li>Додавайте зображення для візуалізації</li>
+                    <li>Максимальний розмір файлу залежить від налаштувань сервера</li>
+                    <li>Студенти зможуть завантажувати ці файли для навчання</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .media-form {
+        border-left: 4px solid #667eea;
+    }
+</style>
+{% endblock %}

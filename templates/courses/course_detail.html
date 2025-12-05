@@ -132,10 +132,14 @@
                                             {% endif %}
                                         </div>
                                         {% if is_enrolled or user.profile.role in 'teacher,admin' %}
+                                        {% if is_enrolled or user.profile.role in 'teacher,admin' %}
                                         <a href="{% url 'lessons:lesson_detail' lesson.id %}" 
-                                           class="btn btn-sm btn-outline-primary">
+                                        class="btn btn-sm btn-outline-primary">
                                             Переглянути
                                         </a>
+                                        {% else %}
+                                        <i class="fas fa-lock text-muted"></i>
+                                        {% endif %}
                                         {% else %}
                                         <i class="fas fa-lock text-muted"></i>
                                         {% endif %}

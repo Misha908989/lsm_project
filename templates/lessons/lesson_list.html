@@ -58,7 +58,7 @@
                 
                 {% if user.profile.role == 'student' %}
                 <div class="mb-2">
-                    {% if lesson.lessonprogress_set.filter(student=user, is_completed=True).exists %}
+                    {% if lesson.id in completed_lessons %}
                     <span class="badge bg-success w-100">
                         <i class="fas fa-check"></i> Завершено
                     </span>

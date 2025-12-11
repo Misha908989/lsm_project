@@ -25,6 +25,7 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('courses/', include('courses.urls')),
     path('lessons/', include('lessons.urls')),
+    path('assignments/', include('assignments.urls')),
     
     # Головна сторінка
     path('', home_view, name='home'),

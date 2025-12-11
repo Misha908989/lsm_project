@@ -1,178 +1,230 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Кабінет викладача - {{ user.username }}{% endblock %}
+{% block title %}Дашборд викладача - LMS{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>
-        <i class="fas fa-chalkboard-teacher text-success"></i> 
-        Кабінет викладача
-    </h2>
-    <span class="badge bg-success">Викладач</span>
+<!-- Заголовок -->
+<div class="mb-4">
+    <h2><i class="fas fa-tachometer-alt text-primary"></i> Дашборд викладача</h2>
+    <p class="text-muted">Вітаємо, {{ user.get_full_name|default:user.username }}!</p>
 </div>
 
 <!-- Статистика -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-book fa-3x mb-2"></i>
-                <h3>{{ courses.count }}</h3>
-                <p class="mb-0">Мої курси</p>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center border-primary">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                <h3>{{ total_courses }}</h3>
+                <p class="text-muted mb-0">Моїх курсів</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-3x mb-2"></i>
-                <h3>
-                    {% widthratio courses.0.get_students_count 1 1 %}
-                </h3>
-                <p class="mb-0">Студентів</p>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center border-success">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h3>{{ total_students }}</h3>
+                <p class="text-muted mb-0">Студентів</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-clock fa-3x mb-2"></i>
-                <h3>{{ pending_submissions|length }}</h3>
-                <p class="mb-0">На перевірці</p>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center border-warning">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                <h3>{{ pending_submissions|default:0 }}</h3>
+                <p class="text-muted mb-0">На перевірці</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <i class="fas fa-check fa-3x mb-2"></i>
-                <h3>{{ grades_given.count|default:0 }}</h3>
-                <p class="mb-0">Оцінено</p>
+    <div class="col-md-3">
+        <div class="card shadow-sm text-center border-info">
+            <div class="card-body">
+                <i class="fas fa-calendar fa-3x text-info mb-3"></i>
+                <h3>{{ my_courses.count }}</h3>
+                <p class="text-muted mb-0">Активних курсів</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Мої курси -->
-<div class="card shadow mb-4">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0"><i class="fas fa-book"></i> Мої курси</h4>
-        {% if user.profile.is_admin %}
-        <a href="#" class="btn btn-light btn-sm">
-            <i class="fas fa-plus"></i> Створити курс
-        </a>
-        {% endif %}
-    </div>
-    <div class="card-body">
-        {% if courses %}
-            <div class="row">
-                {% for course in courses %}
-                <div class="col-md-6 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title mb-0">{{ course.title }}</h5>
-                                {% if course.is_published %}
+<div class="row">
+    <!-- Мої курси -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-book"></i> Мої курси
+                </h5>
+                <a href="{% url 'courses:teacher_courses' %}" class="btn btn-light btn-sm">
+                    Всі курси <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if my_courses %}
+                <div class="list-group list-group-flush">
+                    {% for course in my_courses %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ course.title }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i> {{ course.enrollment_set.count }} студентів
+                                    | 
+                                    <i class="fas fa-book-open"></i> {{ course.module_set.count }} модулів
+                                    |
+                                    {% if course.is_published %}
                                     <span class="badge bg-success">Опубліковано</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Чернетка</span>
-                                {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-warning">Чернетка</span>
+                                    {% endif %}
+                                </small>
                             </div>
-                            <p class="card-text text-muted small">
-                                {{ course.description|truncatewords:20 }}
-                            </p>
-                            
-                            <div class="row text-center mb-3">
-                                <div class="col">
-                                    <small class="text-muted d-block">Студентів</small>
-                                    <strong>{{ course.get_students_count }}</strong>
-                                </div>
-                                <div class="col">
-                                    <small class="text-muted d-block">Модулів</small>
-                                    <strong>{{ course.get_modules_count }}</strong>
-                                </div>
-                                <div class="col">
-                                    <small class="text-muted d-block">Уроків</small>
-                                    <strong>{{ course.get_lessons_count }}</strong>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex gap-2">
-                                <a href="#" class="btn btn-sm btn-primary flex-fill">
-                                    <i class="fas fa-eye"></i> Переглянути
+                            <div class="btn-group">
+                                <a href="{% url 'courses:course_detail' course.slug %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="#" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-edit"></i> Редагувати
+                                <a href="{% url 'courses:course_update' course.slug %}" 
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'courses:manage_modules' course.slug %}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-list"></i>
                                 </a>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> 
-                У вас поки немає курсів. 
-                {% if user.profile.is_admin %}
-                <a href="#" class="alert-link">Створити перший курс</a>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">У вас ще немає курсів</p>
+                    <a href="{% url 'courses:course_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Створити перший курс
+                    </a>
+                </div>
                 {% endif %}
             </div>
-        {% endif %}
+        </div>
+        
+        <!-- Останні дії -->
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Останні дії
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <i class="fas fa-circle text-primary"></i>
+                        <p class="mb-1">Увійшли в систему</p>
+                        <small class="text-muted">Сьогодні</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Швидкі дії -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt"></i> Швидкі дії
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'courses:course_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Створити новий курс
+                    </a>
+                    <a href="{% url 'courses:teacher_courses' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-book"></i> Всі мої курси
+                    </a>
+                    <hr>
+                    {% if my_courses %}
+                    <a href="{% url 'courses:manage_modules' my_courses.first.slug %}" 
+                       class="btn btn-outline-info">
+                        <i class="fas fa-list"></i> Управління модулями
+                    </a>
+                    <a href="{% url 'assignments:assignment_list' my_courses.first.slug %}" 
+                       class="btn btn-outline-warning">
+                        <i class="fas fa-tasks"></i> Завдання курсу
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Корисні посилання -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-link"></i> Корисні посилання
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <a href="{% url 'users:profile' %}" class="text-decoration-none">
+                            <i class="fas fa-user text-primary"></i> Мій профіль
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{% url 'courses:course_list' %}" class="text-decoration-none">
+                            <i class="fas fa-book text-success"></i> Всі курси
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-question-circle text-info"></i> Допомога
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Підказки -->
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb"></i> Підказки
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li class="mb-2">Створюйте структуровані курси з модулями</li>
+                    <li class="mb-2">Додавайте відео до уроків для кращого засвоєння</li>
+                    <li class="mb-2">Давайте детальні відгуки студентам</li>
+                    <li>Перевіряйте завдання вчасно</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Завдання на перевірці -->
-<div class="card shadow">
-    <div class="card-header bg-warning text-white">
-        <h4 class="mb-0"><i class="fas fa-clipboard-list"></i> Завдання на перевірці</h4>
-    </div>
-    <div class="card-body">
-        {% if pending_submissions %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Студент</th>
-                            <th>Завдання</th>
-                            <th>Курс</th>
-                            <th>Дата здачі</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for submission in pending_submissions %}
-                        <tr>
-                            <td>
-                                <i class="fas fa-user-graduate"></i> 
-                                {{ submission.student.username }}
-                            </td>
-                            <td>{{ submission.assignment.title }}</td>
-                            <td>{{ submission.assignment.lesson.module.course.title }}</td>
-                            <td>
-                                {{ submission.submitted_at|date:"d.m.Y H:i" }}
-                                {% if submission.is_late %}
-                                    <span class="badge bg-danger">Запізнення</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="#" class="btn btn-sm btn-success">
-                                    <i class="fas fa-check"></i> Оцінити
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> Всі завдання перевірені!
-            </div>
-        {% endif %}
-    </div>
-</div>
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    
+    .timeline-item i {
+        position: absolute;
+        left: -30px;
+        top: 5px;
+    }
+</style>
 {% endblock %}

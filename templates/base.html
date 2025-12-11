@@ -6,10 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LMS - Система управління навчанням{% endblock %}</title>
     
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Custom CSS -->
     <style>
         :root {
             --primary-color: #667eea;
@@ -85,6 +88,7 @@
             color: white;
         }
         
+        /* Messages Styling */
         .alert {
             border-radius: 0.5rem;
             border: none;
@@ -112,6 +116,7 @@
             color: #0c5460;
         }
         
+        /* Card Styling */
         .card {
             border: none;
             border-radius: 0.5rem;
@@ -122,6 +127,7 @@
             transform: translateY(-2px);
         }
         
+        /* Button Styling */
         .btn {
             border-radius: 0.5rem;
             padding: 0.5rem 1.5rem;
@@ -139,12 +145,14 @@
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
         }
         
+        /* Badge Styling */
         .badge {
             padding: 0.4rem 0.8rem;
             font-weight: 500;
             border-radius: 0.25rem;
         }
         
+        /* Profile Image */
         .profile-img {
             width: 40px;
             height: 40px;
@@ -152,6 +160,7 @@
             border: 2px solid white;
         }
         
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -169,11 +178,7 @@
             background: var(--secondary-color);
         }
         
-        .spinner-border-sm {
-            width: 1rem;
-            height: 1rem;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
             .navbar-brand {
                 font-size: 1.2rem;
@@ -188,18 +193,23 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
+            <!-- Logo -->
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-graduation-cap"></i> LMS
             </a>
             
+            <!-- Mobile Toggle -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
+            <!-- Navigation -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <!-- Головна -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" 
                            href="{% url 'home' %}">
@@ -207,6 +217,7 @@
                         </a>
                     </li>
                     
+                    <!-- Курси -->
                     <li class="nav-item">
                         <a class="nav-link {% if 'courses' in request.path and 'my' not in request.path and 'teacher' not in request.path %}active{% endif %}" 
                            href="{% url 'courses:course_list' %}">
@@ -214,6 +225,7 @@
                         </a>
                     </li>
                     
+                    <!-- Мої курси (для студентів) -->
                     {% if user.is_authenticated and user.profile.role == 'student' %}
                     <li class="nav-item">
                         <a class="nav-link {% if 'my-courses' in request.path %}active{% endif %}" 
@@ -221,8 +233,17 @@
                             <i class="fas fa-graduation-cap"></i> Мої курси
                         </a>
                     </li>
+                    
+                    <!-- Мої оцінки -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'my-grades' in request.path %}active{% endif %}" 
+                           href="{% url 'assignments:my_grades' %}">
+                            <i class="fas fa-chart-bar"></i> Мої оцінки
+                        </a>
+                    </li>
                     {% endif %}
                     
+                    <!-- Мої курси (для викладачів) -->
                     {% if user.is_authenticated and user.profile.role in 'teacher,admin' %}
                     <li class="nav-item">
                         <a class="nav-link {% if 'teacher' in request.path %}active{% endif %}" 
@@ -233,15 +254,20 @@
                     {% endif %}
                 </ul>
                 
+                <!-- Right Side -->
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
+                        <!-- Повідомлення -->
                         <li class="nav-item">
-                            <a class="nav-link" href="#" title="Повідомлення">
+                            <a class="nav-link position-relative" href="#" title="Повідомлення">
                                 <i class="fas fa-bell"></i>
-                                <span class="badge bg-danger badge-sm">0</span>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                    0
+                                </span>
                             </a>
                         </li>
                         
+                        <!-- Профіль (Dropdown) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" 
                                href="#" 
@@ -261,6 +287,7 @@
                                 {{ user.get_full_name|default:user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <!-- Роль -->
                                 <li>
                                     <span class="dropdown-item-text">
                                         <small class="text-muted">
@@ -277,18 +304,21 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 
+                                <!-- Дашборд -->
                                 <li>
                                     <a class="dropdown-item" href="{% url 'users:dashboard' %}">
                                         <i class="fas fa-tachometer-alt"></i> Дашборд
                                     </a>
                                 </li>
                                 
+                                <!-- Профіль -->
                                 <li>
                                     <a class="dropdown-item" href="{% url 'users:profile' %}">
                                         <i class="fas fa-user"></i> Профіль
                                     </a>
                                 </li>
                                 
+                                <!-- Адмін-панель (тільки для адмінів) -->
                                 {% if user.is_staff %}
                                 <li>
                                     <a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank">
@@ -299,6 +329,7 @@
                                 
                                 <li><hr class="dropdown-divider"></li>
                                 
+                                <!-- Вихід -->
                                 <li>
                                     <a class="dropdown-item text-danger" href="{% url 'users:logout' %}">
                                         <i class="fas fa-sign-out-alt"></i> Вийти
@@ -307,12 +338,14 @@
                             </ul>
                         </li>
                     {% else %}
+                        <!-- Вхід -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'users:login' %}">
                                 <i class="fas fa-sign-in-alt"></i> Вхід
                             </a>
                         </li>
                         
+                        <!-- Реєстрація -->
                         <li class="nav-item">
                             <a class="btn btn-light btn-sm ms-2" href="{% url 'users:register' %}">
                                 <i class="fas fa-user-plus"></i> Реєстрація
@@ -324,8 +357,10 @@
         </div>
     </nav>
     
+    <!-- Main Content -->
     <main>
         <div class="container">
+            <!-- Messages -->
             {% if messages %}
                 <div class="mt-3">
                     {% for message in messages %}
@@ -346,13 +381,16 @@
                 </div>
             {% endif %}
             
+            <!-- Page Content -->
             {% block content %}{% endblock %}
         </div>
     </main>
     
+    <!-- Footer -->
     <footer class="footer mt-5">
         <div class="container">
             <div class="row">
+                <!-- Про нас -->
                 <div class="col-md-4 mb-3">
                     <h5><i class="fas fa-graduation-cap"></i> LMS</h5>
                     <p class="text-muted">
@@ -360,6 +398,7 @@
                     </p>
                 </div>
                 
+                <!-- Швидкі посилання -->
                 <div class="col-md-4 mb-3">
                     <h5>Швидкі посилання</h5>
                     <ul class="list-unstyled">
@@ -373,12 +412,13 @@
                     </ul>
                 </div>
                 
+                <!-- Контакти -->
                 <div class="col-md-4 mb-3">
                     <h5>Контакти</h5>
                     <ul class="list-unstyled">
                         <li><i class="fas fa-envelope"></i> info@lms.com</li>
                         <li><i class="fas fa-phone"></i> +380 XX XXX XX XX</li>
-                        <li>
+                        <li class="mt-2">
                             <a href="#" class="me-2"><i class="fab fa-facebook"></i></a>
                             <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
                             <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
@@ -400,9 +440,12 @@
         </div>
     </footer>
     
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- Custom JS -->
     <script>
+        // Auto-hide alerts after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
@@ -413,6 +456,7 @@
             });
         });
         
+        // Active nav link highlight
         document.addEventListener('DOMContentLoaded', function() {
             const currentPath = window.location.pathname;
             const navLinks = document.querySelectorAll('.nav-link');

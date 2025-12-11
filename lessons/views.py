@@ -41,7 +41,18 @@ class LessonListView(LoginRequiredMixin, ListView):
             self.module.course.instructor == user
         )
         
+        if user.is_authenticated and user.profile.role == 'student':
+            completed_lesson_ids = LessonProgress.objects.filter(
+                lesson__module=self.module,
+                student=user,
+                is_completed=True
+            ).values_list('lesson_id', flat=True)
+            context['completed_lessons'] = list(completed_lesson_ids)
+        else:
+            context['completed_lessons'] = []
+        
         return context
+
 
 class LessonDetailView(LoginRequiredMixin, DetailView):
     """Детальна інформація про урок"""
@@ -75,14 +86,26 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         return lesson
     
     def get_context_data(self, **kwargs):
+        """Метод належить до класу LessonDetailView"""
         context = super().get_context_data(**kwargs)
         lesson = self.get_object()
         user = self.request.user
         
-        context['module'] = lesson.module
-        context['course'] = lesson.module.course
+        module = lesson.module
+        course = module.course
+        
+        context['lesson'] = lesson
+        context['module'] = module
+        context['course'] = course
+        
+        if not course.slug:
+            from django.utils.text import slugify
+            course.slug = slugify(course.title) if course.title else f"course-{course.id}"
+            course.save()
         
         context['media_files'] = lesson.media_files.all()
+        
+        context['assignments'] = lesson.assignments.all()
         
         context['previous_lesson'] = lesson.get_previous_lesson()
         context['next_lesson'] = lesson.get_next_lesson()
@@ -90,13 +113,22 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         context['module_lessons'] = lesson.module.lesson_set.filter(
             is_published=True
         ).order_by('order')
-
-        if user.profile.role == 'student':
+        
+        if user.is_authenticated and user.profile.role == 'student':
             progress, created = LessonProgress.objects.get_or_create(
                 lesson=lesson,
                 student=user
             )
             context['progress'] = progress
+            
+            completed_lesson_ids = LessonProgress.objects.filter(
+                lesson__module=lesson.module,
+                student=user,
+                is_completed=True
+            ).values_list('lesson_id', flat=True)
+            context['completed_lessons'] = list(completed_lesson_ids)
+        else:
+            context['completed_lessons'] = []
         
         context['is_teacher'] = (
             user.profile.role in ['teacher', 'admin'] or
@@ -104,6 +136,7 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         )
         
         return context
+
 
 class LessonCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Створення нового уроку"""
@@ -202,6 +235,7 @@ class LessonDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         messages.success(self.request, f'🗑️ Урок "{self.object.title}" видалено')
         return reverse_lazy('courses:course_detail', kwargs={'slug': module.course.slug})
 
+
 @login_required
 def manage_lesson_media(request, lesson_id):
     """Управління медіафайлами уроку"""
@@ -230,6 +264,7 @@ def manage_lesson_media(request, lesson_id):
     }
     
     return render(request, 'lessons/manage_media.html', context)
+
 
 @login_required
 def mark_lesson_complete(request, lesson_id):

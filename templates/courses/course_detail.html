@@ -120,6 +120,15 @@
                             <div class="accordion-body">
                                 <p class="text-muted">{{ module.description }}</p>
                                 
+                                {% if user.profile.role in 'teacher,admin' and user == course.instructor or user.profile.role == 'admin' %}
+                                <div class="mb-3">
+                                    <a href="{% url 'lessons:lesson_create' module.id %}" 
+                                    class="btn btn-sm btn-success">
+                                        <i class="fas fa-plus"></i> Додати урок до цього модуля
+                                    </a>
+                                </div>
+                                {% endif %}
+
                                 {% if module.lesson_set.exists %}
                                 <ul class="list-group list-group-flush">
                                     {% for lesson in module.lesson_set.all %}

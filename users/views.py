@@ -100,54 +100,68 @@ def profile(request):
 
 @login_required
 def dashboard(request):
-    """
-    Особистий кабінет користувача (дашборд)
-    """
-    user = request.user
+    """Дашборд користувача залежно від ролі"""
+    from courses.models import Course, Enrollment
+    from assignments.models import Submission
     
-    if user.profile.is_student():
-        enrollments = user.enrollments.filter(is_active=True).select_related('course')
-        submissions = user.submissions.all()[:5]
-        certificates = user.certificates.all()
+    user = request.user
+    role = user.profile.role
+    
+    context = {
+        'role': role,
+    }
+    
+    if role == 'student':
+        enrollments = Enrollment.objects.filter(
+            student=user,
+            is_active=True
+        ).select_related('course')
         
-        context = {
-            'enrollments': enrollments,
-            'submissions': submissions,
-            'certificates': certificates,
-        }
+        context['enrolled_courses'] = enrollments[:5]
+        context['total_courses'] = enrollments.count()
+        
+        submissions = Submission.objects.filter(
+            student=user
+        ).select_related('assignment')
+        
+        context['total_submissions'] = submissions.count()
+        context['pending_submissions'] = submissions.filter(status='pending').count()
+        context['graded_submissions'] = submissions.filter(status='graded').count()
+        
         return render(request, 'users/student_dashboard.html', context)
     
-    elif user.profile.is_teacher():
-        courses = user.courses_taught.all()
-        pending_submissions = []
-        for course in courses:
-            for module in course.modules.all():
-                for lesson in module.lessons.all():
-                    for assignment in lesson.assignments.all():
-                        pending_submissions.extend(
-                            assignment.submissions.filter(status='pending')
-                        )
+    elif role == 'teacher':
+        courses = user.courses.all() 
         
-        context = {
-            'courses': courses,
-            'pending_submissions': pending_submissions[:10],
-        }
+        context['my_courses'] = courses[:5]
+        context['total_courses'] = courses.count()
+        context['total_students'] = Enrollment.objects.filter(
+            course__in=courses,
+            is_active=True
+        ).count()
+        
+        from assignments.models import Assignment
+        pending_count = Submission.objects.filter(
+            assignment__lesson__module__course__in=courses,
+            status='pending'
+        ).count()
+        context['pending_submissions'] = pending_count
+        
         return render(request, 'users/teacher_dashboard.html', context)
     
-    else:
-        from courses.models import Course, Enrollment
+    elif role == 'admin':
         from django.contrib.auth.models import User
         
-        total_users = User.objects.count()
-        total_courses = Course.objects.count()
-        total_enrollments = Enrollment.objects.count()
+        context['total_courses'] = Course.objects.count()
+        context['total_students'] = User.objects.filter(profile__role='student').count()
+        context['total_teachers'] = User.objects.filter(profile__role='teacher').count()
+        context['recent_enrollments'] = Enrollment.objects.select_related(
+            'student', 'course'
+        ).order_by('-enrolled_at')[:5]
         
-        context = {
-            'total_users': total_users,
-            'total_courses': total_courses,
-            'total_enrollments': total_enrollments,
-        }
         return render(request, 'users/admin_dashboard.html', context)
+    
+    return redirect('home')
 
 
 class CustomPasswordResetView(PasswordResetView):

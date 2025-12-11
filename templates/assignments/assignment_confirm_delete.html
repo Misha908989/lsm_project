@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Видалити завдання - LMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Підтвердження видалення
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Увага!</strong> Ця дія незворотна.
+                </div>
+                
+                <p class="lead">Ви впевнені, що хочете видалити завдання:</p>
+                <h4 class="text-center mb-4">
+                    <i class="fas fa-tasks text-primary"></i> "{{ object.title }}"
+                </h4>
+                
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6>Що буде видалено:</h6>
+                        <ul class="mb-0">
+                            <li><strong>{{ object.submissions.count }}</strong> здач студентів</li>
+                            <li>Всі оцінки за це завдання</li>
+                            <li>Прикріплені файли студентів</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="d-flex justify-content-between gap-2">
+                        <a href="{% url 'assignments:assignment_detail' object.id %}" 
+                           class="btn btn-secondary btn-lg flex-fill">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-danger btn-lg flex-fill">
+                            <i class="fas fa-trash"></i> Так, видалити
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

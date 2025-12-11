@@ -49,6 +49,10 @@
                            class="btn btn-info btn-sm">
                             <i class="fas fa-paperclip"></i> Медіа
                         </a>
+                        <a href="{% url 'assignments:assignment_create' lesson.id %}" 
+                            class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Додати завдання
+                        </a>
                     </div>
                     {% endif %}
                 </div>
@@ -73,6 +77,64 @@
                 </div>
             </div>
         </div>
+        
+        <!-- ДОДАНО: Завдання уроку -->
+        {% if assignments %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks"></i> Завдання уроку ({{ assignments.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for assignment in assignments %}
+                    <a href="{% url 'assignments:assignment_detail' assignment.id %}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-file-alt text-primary"></i> 
+                                    {{ assignment.title }}
+                                </h6>
+                                <p class="mb-1 text-muted small">
+                                    {{ assignment.description|truncatewords:20 }}
+                                </p>
+                                <div class="mt-2">
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-star"></i> Макс. бал: {{ assignment.max_score }}
+                                    </span>
+                                    {% if assignment.due_date %}
+                                    <span class="badge {% if assignment.is_overdue %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        <i class="fas fa-calendar-alt"></i> 
+                                        Дедлайн: {{ assignment.due_date|date:"d.m.Y H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ms-3">
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-body text-center text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p class="mb-0">Для цього уроку ще немає завдань</p>
+                {% if is_teacher %}
+                <a href="{% url 'assignments:assignment_create' lesson.id %}" 
+                   class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Створити завдання
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Медіафайли -->
         {% if media_files %}
@@ -185,7 +247,7 @@
                             {% endif %}
                         </div>
                         {% if user.profile.role == 'student' %}
-                            {% if module_lesson.lessonprogress_set.filter(student=user, is_completed=True).exists %}
+                            {% if module_lesson.id in completed_lessons %}
                             <i class="fas fa-check-circle text-success"></i>
                             {% endif %}
                         {% endif %}

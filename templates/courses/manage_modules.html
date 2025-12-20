@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управління модулями - {{ course.title }} - LMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Заголовок -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>
+                    <i class="fas fa-list text-primary"></i> Управління модулями
+                </h2>
+                <p class="text-muted mb-0">Курс: <strong>{{ course.title }}</strong></p>
+            </div>
+            <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Назад до курсу
+            </a>
+        </div>
+        
+        <!-- Форма модулів -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-book-open"></i> Модулі курсу
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    
+                    <!-- Помилки formset -->
+                    {% if formset.non_form_errors %}
+                    <div class="alert alert-danger">
+                        {{ formset.non_form_errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Список модулів -->
+                    <div id="modules-container">
+                        {% for form in formset %}
+                        <div class="module-form card mb-3">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        Модуль #{{ forloop.counter }}
+                                    </h5>
+                                    {% if form.instance.pk %}
+                                    <span class="badge bg-info">Існуючий модуль</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Новий модуль</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- Помилки форми -->
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                        <div>{{ field.label }}: {{ error }}</div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Прихований ID -->
+                                {{ form.id }}
+                                
+                                <div class="row">
+                                    <!-- Назва модуля -->
+                                    <div class="col-md-8 mb-3">
+                                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                                            Назва модуля <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.title }}
+                                    </div>
+                                    
+                                    <!-- Порядок -->
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.order.id_for_label }}" class="form-label">
+                                            Порядок <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.order }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Опис -->
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Опис модуля
+                                    </label>
+                                    {{ form.description }}
+                                </div>
+                                
+                                <!-- Видалення -->
+                                {% if form.instance.pk %}
+                                <div class="form-check">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                        <i class="fas fa-trash"></i> Видалити цей модуль
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Інформаційне повідомлення -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Підказка:</strong> Порядок модулів визначає їх послідовність на сторінці курсу.
+                        Модулі будуть відображатися в порядку зростання цього числа.
+                    </div>
+                    
+                    <!-- Кнопки дій -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'courses:course_detail' course.slug %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Зберегти модулі
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Підказки -->
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Підказки
+                </h5>
+                <ul class="mb-0">
+                    <li>Кожен курс може мати кілька модулів</li>
+                    <li>Модулі групують уроки за темами</li>
+                    <li>Використовуйте порядковий номер для впорядкування модулів</li>
+                    <li>Після збереження модулів ви зможете додати до них уроки</li>
+                    <li>Видалення модуля також видалить всі його уроки</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .module-form {
+        border-left: 4px solid #667eea;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Редагувати курс{% else %}Створити курс{% endif %} - LMS
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-book"></i>
+                    {% if form.instance.pk %}
+                        Редагувати курс: {{ form.instance.title }}
+                    {% else %}
+                        Створити новий курс
+                    {% endif %}
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Помилки форми -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Виправте помилки:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <!-- Основна інформація -->
+                        <div class="col-md-8">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info-circle text-primary"></i> Основна інформація
+                            </h5>
+                            
+                            <!-- Назва курсу -->
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    Назва курсу <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.help_text %}
+                                <small class="form-text text-muted">{{ form.title.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Опис -->
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Опис курсу <span class="text-danger">*</span>
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.help_text %}
+                                <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Рівень та тривалість -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.level.id_for_label }}" class="form-label">
+                                        Рівень складності <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.level }}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.duration.id_for_label }}" class="form-label">
+                                        Тривалість (годин)
+                                    </label>
+                                    {{ form.duration }}
+                                </div>
+                            </div>
+                            
+                            <!-- Ціна та максимум студентів -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.price.id_for_label }}" class="form-label">
+                                        Ціна (грн)
+                                    </label>
+                                    {{ form.price }}
+                                    <small class="form-text text-muted">0 = безкоштовно</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.max_students.id_for_label }}" class="form-label">
+                                        Макс. студентів
+                                    </label>
+                                    {{ form.max_students }}
+                                    <small class="form-text text-muted">
+                                        Залиште порожнім для необмеженої кількості
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Додаткові налаштування -->
+                        <div class="col-md-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-cog text-secondary"></i> Налаштування
+                            </h5>
+                            
+                            <!-- Обкладинка -->
+                            <div class="mb-3">
+                                <label for="{{ form.thumbnail.id_for_label }}" class="form-label">
+                                    Обкладинка курсу
+                                </label>
+                                {{ form.thumbnail }}
+                                {% if form.instance.thumbnail %}
+                                <div class="mt-2">
+                                    <img src="{{ form.instance.thumbnail.url }}" 
+                                         class="img-thumbnail" 
+                                         style="max-width: 200px;" 
+                                         alt="Поточна обкладинка">
+                                    <p class="text-muted small mt-1">Поточна обкладинка</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Викладач (тільки для адмінів) -->
+                            {% if user.profile.role == 'admin' %}
+                            <div class="mb-3">
+                                <label for="{{ form.instructor.id_for_label }}" class="form-label">
+                                    Викладач <span class="text-danger">*</span>
+                                </label>
+                                {{ form.instructor }}
+                            </div>
+                            {% else %}
+                            {{ form.instructor }}
+                            {% endif %}
+                            
+                            <!-- Опублікувати -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_published }}
+                                    <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                                        Опублікувати курс
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Студенти зможуть записуватися лише на опубліковані курси
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Кнопки дій -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if form.instance.pk %}{% url 'courses:course_detail' form.instance.slug %}{% else %}{% url 'courses:course_list' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i>
+                            {% if form.instance.pk %}
+                                Зберегти зміни
+                            {% else %}
+                                Створити курс
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Підказки -->
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Підказки
+                </h5>
+                <ul class="mb-0">
+                    <li><strong>Назва курсу</strong> - коротка та зрозуміла назва (макс. 200 символів)</li>
+                    <li><strong>Опис</strong> - детальний опис курсу, що вивчатиметься, для кого підходить</li>
+                    <li><strong>Рівень</strong> - оберіть відповідний рівень складності для студентів</li>
+                    <li><strong>Обкладинка</strong> - зображення 16:9 (рекомендовано 1280x720px)</li>
+                    <li>Після створення курсу ви зможете додати <strong>модулі</strong> та <strong>уроки</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Видалити урок - LMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Підтвердження видалення
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Увага!</strong> Ця дія незворотна.
+                </div>
+                
+                <p class="lead">Ви впевнені, що хочете видалити урок:</p>
+                <h4 class="text-center mb-4">
+                    <i class="fas fa-file-alt text-primary"></i> "{{ object.title }}"
+                </h4>
+                
+                <!-- Інформація про урок -->
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6>Інформація про урок:</h6>
+                        <ul class="mb-0">
+                            <li><strong>Модуль:</strong> {{ object.module.title }}</li>
+                            <li><strong>Курс:</strong> {{ object.module.course.title }}</li>
+                            <li><strong>Порядок:</strong> {{ object.order }}</li>
+                            {% if object.duration_minutes %}
+                            <li><strong>Тривалість:</strong> {{ object.duration_minutes }} хвилин</li>
+                            {% endif %}
+                            <li><strong>Медіафайлів:</strong> {{ object.media_files.count }}</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Разом з уроком будуть видалені всі прикріплені медіафайли та прогрес студентів
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="d-flex justify-content-between gap-2">
+                        <a href="{% url 'lessons:lesson_detail' object.id %}" 
+                           class="btn btn-secondary btn-lg flex-fill">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-danger btn-lg flex-fill">
+                            <i class="fas fa-trash"></i> Так, видалити урок
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

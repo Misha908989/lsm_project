@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мої курси - LMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-graduation-cap text-primary"></i> Мої курси</h2>
+    <a href="{% url 'courses:course_list' %}" class="btn btn-outline-primary">
+        <i class="fas fa-search"></i> Знайти курси
+    </a>
+</div>
+
+{% if enrollments %}
+    <div class="row">
+        {% for enrollment in enrollments %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <!-- Обкладинка -->
+                {% if enrollment.course.thumbnail %}
+                <img src="{{ enrollment.course.thumbnail.url }}" 
+                     class="card-img-top" 
+                     alt="{{ enrollment.course.title }}"
+                     style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-gradient-primary text-white d-flex align-items-center justify-content-center" 
+                     style="height: 200px;">
+                    <i class="fas fa-book fa-3x"></i>
+                </div>
+                {% endif %}
+                
+                <div class="card-body d-flex flex-column">
+                    <!-- Бейджі -->
+                    <div class="mb-2">
+                        <span class="badge bg-primary">{{ enrollment.course.get_level_display }}</span>
+                        {% if not enrollment.is_active %}
+                        <span class="badge bg-danger">Неактивний</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Назва -->
+                    <h5 class="card-title">{{ enrollment.course.title }}</h5>
+                    
+                    <!-- Опис -->
+                    <p class="card-text text-muted small flex-grow-1">
+                        {{ enrollment.course.description|truncatewords:20 }}
+                    </p>
+                    
+                    <!-- Прогрес -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Прогрес</small>
+                            <small><strong>{{ enrollment.progress }}%</strong></small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar 
+                                        {% if enrollment.progress < 30 %}bg-danger
+                                        {% elif enrollment.progress < 70 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ enrollment.progress }}%"
+                                 aria-valuenow="{{ enrollment.progress }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Статистика -->
+                    <div class="row text-center small mb-3">
+                        <div class="col-4">
+                            <i class="fas fa-book-open text-primary"></i>
+                            <div><strong>{{ enrollment.course.module_set.count }}</strong></div>
+                            <div class="text-muted">Модулів</div>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-clock text-info"></i>
+                            <div><strong>{{ enrollment.course.duration }}</strong></div>
+                            <div class="text-muted">Годин</div>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-tasks text-success"></i>
+                            <div><strong>--</strong></div>
+                            <div class="text-muted">Завдань</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки -->
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'courses:course_detail' enrollment.course.slug %}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-play"></i> Продовжити навчання
+                        </a>
+                        
+                        {% if enrollment.progress == 100 %}
+                        <a href="#" class="btn btn-success">
+                            <i class="fas fa-certificate"></i> Завантажити сертифікат
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Дата запису -->
+                    <div class="text-muted small mt-2 text-center">
+                        <i class="fas fa-calendar"></i> 
+                        Записано: {{ enrollment.enrolled_at|date:"d.m.Y" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Пагінація -->
+    {% if is_paginated %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">Перша</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Попередня</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Сторінка {{ page_obj.number }} з {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Наступна</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Остання</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+{% else %}
+    <!-- Порожній список -->
+    <div class="text-center py-5">
+        <i class="fas fa-inbox fa-5x text-muted mb-4"></i>
+        <h4>Ви ще не записані на жоден курс</h4>
+        <p class="text-muted">Почніть своє навчання прямо зараз!</p>
+        <a href="{% url 'courses:course_list' %}" class="btn btn-primary btn-lg mt-3">
+            <i class="fas fa-search"></i> Переглянути доступні курси
+        </a>
+    </div>
+{% endif %}
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    }
+</style>
+{% endblock %}

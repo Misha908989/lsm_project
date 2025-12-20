@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Головна - LMS{% endblock %}
+
+{% block content %}
+<!-- Hero секція -->
+<div class="bg-gradient-primary text-white rounded-3 p-5 mb-5 shadow">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="fas fa-graduation-cap"></i> Ласкаво просимо до LMS
+            </h1>
+            <p class="lead mb-4">
+                Платформа для онлайн-навчання, де ви можете вивчати нові навички,
+                покращувати свої знання та отримувати сертифікати
+            </p>
+            {% if not user.is_authenticated %}
+            <div class="d-flex gap-3">
+                <a href="{% url 'users:register' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-user-plus"></i> Реєстрація
+                </a>
+                <a href="{% url 'courses:course_list' %}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-search"></i> Переглянути курси
+                </a>
+            </div>
+            {% else %}
+            <a href="{% url 'users:dashboard' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-tachometer-alt"></i> Мій кабінет
+            </a>
+            {% endif %}
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="fas fa-book-reader fa-10x opacity-75"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row text-center mb-5">
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                <h3 class="mb-0">{{ total_courses }}</h3>
+                <p class="text-muted mb-0">Курсів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h3 class="mb-0">{{ total_students }}</h3>
+                <p class="text-muted mb-0">Студентів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
+                <h3 class="mb-0">{{ total_teachers }}</h3>
+                <p class="text-muted mb-0">Викладачів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-certificate fa-3x text-warning mb-3"></i>
+                <h3 class="mb-0">{{ total_certificates }}</h3>
+                <p class="text-muted mb-0">Сертифікатів</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Нові курси -->
+{% if new_courses %}
+<div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-fire text-danger"></i> Нові курси</h2>
+        <a href="{% url 'courses:course_list' %}" class="btn btn-outline-primary">
+            Всі курси <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    <div class="row">
+        {% for course in new_courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" 
+                     class="card-img-top" 
+                     alt="{{ course.title }}"
+                     style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-gradient-primary text-white d-flex align-items-center justify-content-center" 
+                     style="height: 200px;">
+                    <i class="fas fa-book fa-3x"></i>
+                </div>
+                {% endif %}
+                
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-2">
+                        <span class="badge bg-primary">{{ course.get_level_display }}</span>
+                        <span class="badge bg-success">Новий</span>
+                    </div>
+                    
+                    <h5 class="card-title">{{ course.title }}</h5>
+                    <p class="card-text text-muted small flex-grow-1">
+                        {{ course.description|truncatewords:15 }}
+                    </p>
+                    
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> 
+                                {{ course.instructor.get_full_name|default:course.instructor.username }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> {{ course.duration }}год
+                            </small>
+                        </div>
+                        
+                        <a href="{% url 'courses:course_detail' course.slug %}" 
+                           class="btn btn-primary w-100">
+                            Детальніше <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Оголошення -->
+{% if announcements %}
+<div class="mb-5">
+    <h2 class="mb-4">
+        <i class="fas fa-bullhorn text-warning"></i> Останні оголошення
+    </h2>
+    
+    <div class="row">
+        {% for announcement in announcements %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            {{ announcement.title }}
+                            {% if announcement.is_pinned %}
+                            <i class="fas fa-thumbtack text-danger"></i>
+                            {% endif %}
+                        </h5>
+                        <span class="badge 
+                            {% if announcement.type == 'important' %}bg-danger
+                            {% elif announcement.type == 'update' %}bg-info
+                            {% else %}bg-secondary{% endif %}">
+                            {{ announcement.get_type_display }}
+                        </span>
+                    </div>
+                    
+                    <p class="card-text">{{ announcement.content|truncatewords:30 }}</p>
+                    
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> 
+                        {{ announcement.created_at|date:"d.m.Y H:i" }}
+                        {% if announcement.course %}
+                        | <i class="fas fa-book"></i> {{ announcement.course.title }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Переваги платформи -->
+<div class="row mb-5">
+    <div class="col-12 mb-4">
+        <h2 class="text-center">
+            <i class="fas fa-star text-warning"></i> Чому обирають нас?
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <i class="fas fa-laptop fa-4x text-primary mb-3"></i>
+                <h5 class="card-title">Онлайн навчання</h5>
+                <p class="card-text text-muted">
+                    Навчайтесь у зручний час з будь-якого місця
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <i class="fas fa-certificate fa-4x text-success mb-3"></i>
+                <h5 class="card-title">Сертифікати</h5>
+                <p class="card-text text-muted">
+                    Отримуйте сертифікати після завершення курсів
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-4x text-info mb-3"></i>
+                <h5 class="card-title">Досвідчені викладачі</h5>
+                <p class="card-text text-muted">
+                    Навчання від професіоналів своєї справи
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action -->
+{% if not user.is_authenticated %}
+<div class="bg-light rounded-3 p-5 text-center shadow-sm">
+    <h3 class="mb-3">Готові почати навчання?</h3>
+    <p class="lead mb-4">
+        Приєднуйтесь до тисяч студентів, які вже навчаються на нашій платформі
+    </p>
+    <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-user-plus"></i> Зареєструватися безкоштовно
+    </a>
+</div>
+{% endif %}
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .hover-card {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    }
+</style>
+{% endblock %}

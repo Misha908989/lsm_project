@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Редагувати урок{% else %}Створити урок{% endif %} - LMS
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Головна</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">Курси</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' course.slug %}">{{ course.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'lessons:lesson_list' module.id %}">{{ module.title }}</a></li>
+                <li class="breadcrumb-item active">
+                    {% if form.instance.pk %}Редагування{% else %}Новий урок{% endif %}
+                </li>
+            </ol>
+        </nav>
+        
+        <!-- Форма -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-file-alt"></i>
+                    {% if form.instance.pk %}
+                        Редагувати урок: {{ form.instance.title }}
+                    {% else %}
+                        Створити новий урок
+                    {% endif %}
+                </h3>
+            </div>
+            
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Помилки -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Виправте помилки:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <!-- Основна інформація -->
+                        <div class="col-md-8">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info-circle text-primary"></i> Основна інформація
+                            </h5>
+                            
+                            <!-- Модуль (скритий, якщо редагування) -->
+                            {% if not form.instance.pk %}
+                            <div class="mb-3">
+                                <label for="{{ form.module.id_for_label }}" class="form-label">
+                                    Модуль <span class="text-danger">*</span>
+                                </label>
+                                {{ form.module }}
+                            </div>
+                            {% else %}
+                            {{ form.module }}
+                            {% endif %}
+                            
+                            <!-- Назва -->
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    Назва уроку <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title }}
+                            </div>
+                            
+                            <!-- Контент -->
+                            <div class="mb-3">
+                                <label for="{{ form.content.id_for_label }}" class="form-label">
+                                    Зміст уроку <span class="text-danger">*</span>
+                                </label>
+                                {{ form.content }}
+                                <small class="form-text text-muted">
+                                    Детальний опис уроку, основні моменти
+                                </small>
+                            </div>
+                            
+                            <!-- YouTube відео -->
+                            <div class="mb-3">
+                                <label for="{{ form.video_url.id_for_label }}" class="form-label">
+                                    <i class="fab fa-youtube text-danger"></i> YouTube відео
+                                </label>
+                                {{ form.video_url }}
+                                <small class="form-text text-muted">
+                                    Вставте посилання на YouTube відео (наприклад: https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Налаштування -->
+                        <div class="col-md-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-cog text-secondary"></i> Налаштування
+                            </h5>
+                            
+                            <!-- Порядок -->
+                            <div class="mb-3">
+                                <label for="{{ form.order.id_for_label }}" class="form-label">
+                                    Порядок <span class="text-danger">*</span>
+                                </label>
+                                {{ form.order }}
+                                <small class="form-text text-muted">
+                                    Порядковий номер уроку в модулі
+                                </small>
+                            </div>
+                            
+                            <!-- Тривалість -->
+                            <div class="mb-3">
+                                <label for="{{ form.duration_minutes.id_for_label }}" class="form-label">
+                                    Тривалість (хвилин)
+                                </label>
+                                {{ form.duration_minutes }}
+                            </div>
+                            
+                            <!-- Опублікувати -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_published }}
+                                    <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                                        Опублікувати урок
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Безкоштовний перегляд -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_free }}
+                                    <label class="form-check-label" for="{{ form.is_free.id_for_label }}">
+                                        Безкоштовний перегляд
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Дозволити перегляд без запису на курс
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if form.instance.pk %}{% url 'lessons:lesson_detail' form.instance.id %}{% else %}{% url 'lessons:lesson_list' module.id %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Скасувати
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i>
+                            {% if form.instance.pk %}
+                                Зберегти зміни
+                            {% else %}
+                                Створити урок
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Підказки -->
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Підказки
+                </h5>
+                <ul class="mb-0">
+                    <li><strong>Назва уроку</strong> - коротка та зрозуміла назва (макс. 200 символів)</li>
+                    <li><strong>Контент</strong> - детальний опис уроку, основні моменти, що вивчатиметься</li>
+                    <li><strong>YouTube відео</strong> - додайте відео для кращого засвоєння матеріалу</li>
+                    <li><strong>Порядок</strong> - визначає послідовність уроків у модулі</li>
+                    <li>Після створення уроку ви зможете додати <strong>медіафайли</strong> (PDF, презентації, документи)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

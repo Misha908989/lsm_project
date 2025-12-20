@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} - LMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Основний контент -->
+    <div class="col-lg-8">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Головна</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">Курси</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' course.slug %}">{{ course.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'lessons:lesson_list' module.id %}">{{ module.title }}</a></li>
+                <li class="breadcrumb-item active">{{ lesson.title }}</li>
+            </ol>
+        </nav>
+        
+        <!-- Заголовок -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h2 class="mb-2">
+                            <i class="fas fa-play-circle text-primary"></i> {{ lesson.title }}
+                        </h2>
+                        <div class="mb-2">
+                            <span class="badge bg-primary">Урок {{ lesson.order }}</span>
+                            {% if lesson.duration_minutes %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-clock"></i> {{ lesson.duration_minutes }} хвилин
+                            </span>
+                            {% endif %}
+                            {% if lesson.is_free %}
+                            <span class="badge bg-success">Безкоштовно</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if is_teacher %}
+                    <div class="btn-group">
+                        <a href="{% url 'lessons:lesson_update' lesson.id %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Редагувати
+                        </a>
+                        <a href="{% url 'lessons:manage_lesson_media' lesson.id %}" 
+                           class="btn btn-info btn-sm">
+                            <i class="fas fa-paperclip"></i> Медіа
+                        </a>
+                        <a href="{% url 'assignments:assignment_create' lesson.id %}" 
+                            class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> Додати завдання
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- YouTube відео -->
+                {% if lesson.video_url %}
+                <div class="ratio ratio-16x9 mb-4">
+                    <iframe 
+                        src="{{ lesson.get_youtube_embed_url }}" 
+                        title="{{ lesson.title }}" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                {% endif %}
+                
+                <!-- Контент уроку -->
+                <div class="lesson-content">
+                    <h4>Опис уроку</h4>
+                    <div class="text-content">
+                        {{ lesson.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ДОДАНО: Завдання уроку -->
+        {% if assignments %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks"></i> Завдання уроку ({{ assignments.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for assignment in assignments %}
+                    <a href="{% url 'assignments:assignment_detail' assignment.id %}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-file-alt text-primary"></i> 
+                                    {{ assignment.title }}
+                                </h6>
+                                <p class="mb-1 text-muted small">
+                                    {{ assignment.description|truncatewords:20 }}
+                                </p>
+                                <div class="mt-2">
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-star"></i> Макс. бал: {{ assignment.max_score }}
+                                    </span>
+                                    {% if assignment.due_date %}
+                                    <span class="badge {% if assignment.is_overdue %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        <i class="fas fa-calendar-alt"></i> 
+                                        Дедлайн: {{ assignment.due_date|date:"d.m.Y H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ms-3">
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-body text-center text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p class="mb-0">Для цього уроку ще немає завдань</p>
+                {% if is_teacher %}
+                <a href="{% url 'assignments:assignment_create' lesson.id %}" 
+                   class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Створити завдання
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Медіафайли -->
+        {% if media_files %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-paperclip"></i> Матеріали уроку
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for media in media_files %}
+                    <a href="{{ media.file.url }}" 
+                       target="_blank" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas {{ media.get_file_icon }} fa-2x me-3"></i>
+                            <div class="d-inline-block">
+                                <strong>{{ media.title }}</strong>
+                                {% if media.description %}
+                                <br><small class="text-muted">{{ media.description }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">{{ media.get_file_size_display }}</span>
+                            <br>
+                            <small class="text-muted">{{ media.get_file_type_display }}</small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Навігація між уроками -->
+        <div class="d-flex justify-content-between mb-4">
+            {% if previous_lesson %}
+            <a href="{% url 'lessons:lesson_detail' previous_lesson.id %}" 
+               class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Попередній урок
+            </a>
+            {% else %}
+            <div></div>
+            {% endif %}
+            
+            {% if user.profile.role == 'student' %}
+                {% if progress and not progress.is_completed %}
+                <form method="post" action="{% url 'lessons:mark_complete' lesson.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Завершити урок
+                    </button>
+                </form>
+                {% elif progress and progress.is_completed %}
+                <button class="btn btn-success" disabled>
+                    <i class="fas fa-check-circle"></i> Завершено
+                </button>
+                {% endif %}
+            {% endif %}
+            
+            {% if next_lesson %}
+            <a href="{% url 'lessons:lesson_detail' next_lesson.id %}" 
+               class="btn btn-primary">
+                Наступний урок <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <div></div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Інформація про модуль -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-book"></i> {{ module.title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">{{ module.description }}</p>
+                <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-arrow-left"></i> Повернутися до курсу
+                </a>
+            </div>
+        </div>
+        
+        <!-- Список уроків модуля -->
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-list"></i> Уроки модуля
+                </h6>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for module_lesson in module_lessons %}
+                <a href="{% url 'lessons:lesson_detail' module_lesson.id %}" 
+                   class="list-group-item list-group-item-action {% if module_lesson.id == lesson.id %}active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-play-circle"></i>
+                            {{ module_lesson.order }}. {{ module_lesson.title }}
+                            {% if module_lesson.duration_minutes %}
+                            <br><small class="{% if module_lesson.id == lesson.id %}text-white-50{% else %}text-muted{% endif %}">
+                                {{ module_lesson.duration_minutes }} хв
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% if user.profile.role == 'student' %}
+                            {% if module_lesson.id in completed_lessons %}
+                            <i class="fas fa-check-circle text-success"></i>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Прогрес студента -->
+        {% if user.profile.role == 'student' and progress %}
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <h6>Ваш статус</h6>
+                {% if progress.is_completed %}
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-check-circle"></i> 
+                    Урок завершено
+                    <br>
+                    <small>{{ progress.completed_at|date:"d.m.Y H:i" }}</small>
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-clock"></i> В процесі
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .lesson-content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+    
+    .text-content {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    
+    .list-group-item.active {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}

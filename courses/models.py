@@ -1,68 +1,30 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
-from django.urls import reverse
-from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 
-# Create your models here.
 
 class Course(models.Model):
-    """
-    Модель курсу
-    """
+    """Модель курсу"""
+    
     LEVEL_CHOICES = [
         ('beginner', 'Початковий'),
         ('intermediate', 'Середній'),
         ('advanced', 'Просунутий'),
     ]
     
-    title = models.CharField(
-        max_length=200,
-        verbose_name='Назва курсу'
-    )
-    slug = models.SlugField(
-        max_length=200,
-        unique=True,
-        blank=True,
-        verbose_name='URL'
-    )
-    description = models.TextField(
-        verbose_name='Опис курсу'
-    )
-    instructor = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='courses_taught',
-        verbose_name='Викладач'
-    )
-    level = models.CharField(
-        max_length=20,
-        choices=LEVEL_CHOICES,
-        default='beginner',
-        verbose_name='Рівень'
-    )
-    duration_weeks = models.PositiveIntegerField(
-        default=4,
-        verbose_name='Тривалість (тижнів)'
-    )
-    thumbnail = models.ImageField(
-        upload_to='courses/thumbnails/',
-        blank=True,
-        null=True,
-        verbose_name='Обкладинка'
-    )
-    is_published = models.BooleanField(
-        default=False,
-        verbose_name='Опублікований'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата створення'
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='Дата оновлення'
-    )
+    title = models.CharField('Назва курсу', max_length=200)
+    slug = models.SlugField('URL', max_length=200, unique=True, blank=True)
+    description = models.TextField('Опис курсу')
+    thumbnail = models.ImageField('Обкладинка', upload_to='courses/thumbnails/', blank=True, null=True)
+    instructor = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Викладач', related_name='courses')
+    level = models.CharField('Рівень складності', max_length=20, choices=LEVEL_CHOICES, default='beginner')
+    duration = models.PositiveIntegerField('Тривалість (годин)', default=0, help_text='Загальна тривалість курсу в годинах')
+    price = models.DecimalField('Ціна', max_digits=10, decimal_places=2, default=0, help_text='0 = безкоштовно')
+    max_students = models.PositiveIntegerField('Максимум студентів', blank=True, null=True, help_text='Залиште порожнім для необмеженої кількості')
+    is_published = models.BooleanField('Опубліковано', default=False)
+    created_at = models.DateTimeField('Дата створення', auto_now_add=True)
+    updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
     
     class Meta:
         verbose_name = 'Курс'
@@ -73,172 +35,174 @@ class Course(models.Model):
         return self.title
     
     def save(self, *args, **kwargs):
+        """Автоматична генерація slug при збереженні"""
         if not self.slug:
-            self.slug = slugify(self.title)
+            # Згенерувати базовий slug з title
+            base_slug = slugify(self.title)
+            
+            # Якщо title не латиницею (кирилиця), використати транслітерацію або ID
+            if not base_slug:
+                # Імпорт для транслітерації (опціонально)
+                try:
+                    from transliterate import translit
+                    base_slug = slugify(translit(self.title, reversed=True))
+                except:
+                    # Якщо транслітерація не доступна, використати course-id
+                    # Спочатку зберігаємо щоб отримати ID
+                    if not self.pk:
+                        super().save(*args, **kwargs)
+                    base_slug = f"course-{self.pk}"
+            
+            # Перевірити унікальність slug
+            slug = base_slug
+            counter = 1
+            while Course.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f'{base_slug}-{counter}'
+                counter += 1
+            
+            self.slug = slug
+        
         super().save(*args, **kwargs)
     
-    def get_absolute_url(self):
-        return reverse('courses:detail', kwargs={'slug': self.slug})
-    
-    def get_students_count(self):
-        """Кількість студентів на курсі"""
-        return self.enrollments.filter(is_active=True).count()
+    def get_enrolled_count(self):
+        """Кількість записаних студентів"""
+        return self.enrollment_set.filter(is_active=True).count()
     
     def get_modules_count(self):
-        """Кількість модулів у курсі"""
-        return self.modules.count()
+        """Кількість модулів"""
+        return self.module_set.count()
     
     def get_lessons_count(self):
         """Загальна кількість уроків у курсі"""
-        return sum(module.lessons.count() for module in self.modules.all())
+        from lessons.models import Lesson
+        return Lesson.objects.filter(module__course=self).count()
+    
+    def get_duration_display(self):
+        """Відображення тривалості"""
+        if self.duration < 1:
+            return "Менше години"
+        elif self.duration == 1:
+            return "1 година"
+        elif self.duration < 5:
+            return f"{self.duration} години"
+        else:
+            return f"{self.duration} годин"
 
 
 class Module(models.Model):
-    """
-    Модель модуля курсу
-    """
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='modules',
-        verbose_name='Курс'
-    )
-    title = models.CharField(
-        max_length=200,
-        verbose_name='Назва модуля'
-    )
-    description = models.TextField(
-        blank=True,
-        verbose_name='Опис модуля'
-    )
-    order = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Порядок'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата створення'
-    )
+    """Модель модуля курсу"""
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='Курс')
+    title = models.CharField('Назва модуля', max_length=200)
+    description = models.TextField('Опис модуля', blank=True)
+    order = models.PositiveIntegerField('Порядок', default=1)
+    created_at = models.DateTimeField('Дата створення', auto_now_add=True)
+    updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
     
     class Meta:
         verbose_name = 'Модуль'
         verbose_name_plural = 'Модулі'
-        ordering = ['course', 'order']
+        ordering = ['order']
         unique_together = ['course', 'order']
     
     def __str__(self):
-        return f'{self.course.title} - Модуль {self.order}: {self.title}'
+        return f'{self.course.title} - {self.title}'
     
     def get_lessons_count(self):
         """Кількість уроків у модулі"""
-        return self.lessons.count()
+        return self.lesson_set.count()
+    
+    def get_total_duration(self):
+        """Загальна тривалість уроків модуля в хвилинах"""
+        from lessons.models import Lesson
+        total = Lesson.objects.filter(module=self).aggregate(
+            total=models.Sum('duration_minutes')
+        )['total']
+        return total or 0
 
 
 class Enrollment(models.Model):
-    """
-    Модель запису студента на курс
-    """
-    student = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='enrollments',
-        verbose_name='Студент'
-    )
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='enrollments',
-        verbose_name='Курс'
-    )
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name='Активний'
-    )
-    enrolled_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата запису'
-    )
-    completed_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='Дата завершення'
-    )
-    progress = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Прогрес (%)'
-    )
+    """Модель запису студента на курс"""
+    
+    student = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Студент')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='Курс')
+    enrolled_at = models.DateTimeField('Дата запису', auto_now_add=True)
+    is_active = models.BooleanField('Активний', default=True)
+    progress = models.PositiveIntegerField('Прогрес (%)', default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    completed_at = models.DateTimeField('Дата завершення', blank=True, null=True)
     
     class Meta:
         verbose_name = 'Запис на курс'
         verbose_name_plural = 'Записи на курси'
-        unique_together = ['student', 'course']
         ordering = ['-enrolled_at']
+        unique_together = ['student', 'course']
     
     def __str__(self):
         return f'{self.student.username} - {self.course.title}'
     
-    def is_completed(self):
-        """Чи завершений курс"""
-        return self.completed_at is not None
-    
-    def complete_course(self):
-        """Відмітити курс як завершений"""
-        self.completed_at = timezone.now()
-        self.progress = 100
+    def update_progress(self):
+        """Оновлення прогресу студента на основі завершених уроків"""
+        from lessons.models import Lesson, LessonProgress
+        
+        # Отримати всі уроки курсу
+        total_lessons = Lesson.objects.filter(
+            module__course=self.course,
+            is_published=True
+        ).count()
+        
+        if total_lessons == 0:
+            self.progress = 0
+        else:
+            # Отримати кількість завершених уроків
+            completed_lessons = LessonProgress.objects.filter(
+                lesson__module__course=self.course,
+                student=self.student,
+                is_completed=True
+            ).count()
+            
+            # Розрахувати прогрес
+            self.progress = int((completed_lessons / total_lessons) * 100)
+        
+        # Якщо прогрес 100%, встановити дату завершення
+        if self.progress >= 100 and not self.completed_at:
+            from django.utils import timezone
+            self.completed_at = timezone.now()
+        
         self.save()
+        return self.progress
 
 
 class Announcement(models.Model):
-    """
-    Модель оголошення
-    """
+    """Модель оголошення"""
+    
     TYPE_CHOICES = [
-        ('info', 'Інформація'),
-        ('warning', 'Попередження'),
-        ('success', 'Успіх'),
-        ('danger', 'Важливе'),
+        ('general', 'Загальне'),
+        ('important', 'Важливе'),
+        ('update', 'Оновлення'),
     ]
     
-    title = models.CharField(
-        max_length=200,
-        verbose_name='Заголовок'
-    )
-    content = models.TextField(
-        verbose_name='Текст оголошення'
-    )
-    type = models.CharField(
-        max_length=20,
-        choices=TYPE_CHOICES,
-        default='info',
-        verbose_name='Тип'
-    )
+    title = models.CharField('Заголовок', max_length=200)
+    content = models.TextField('Зміст')
+    type = models.CharField('Тип', max_length=20, choices=TYPE_CHOICES, default='general')
     course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='announcements',
-        verbose_name='Курс'
-    )
-    is_active = models.BooleanField(
-        default=True,
-        verbose_name='Активне'
-    )
-    is_pinned = models.BooleanField(
-        default=False,
-        verbose_name='Закріплене'
+        Course, 
+        on_delete=models.CASCADE, 
+        verbose_name='Курс', 
+        blank=True, 
+        null=True, 
+        help_text='Залиште порожнім для загального оголошення'
     )
     created_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='announcements',
-        verbose_name='Створив'
+        User, 
+        on_delete=models.CASCADE, 
+        verbose_name='Автор', 
+        null=True, 
+        blank=True
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата створення'
-    )
+    is_active = models.BooleanField('Активне', default=True)
+    is_pinned = models.BooleanField('Закріплене', default=False)
+    created_at = models.DateTimeField('Дата створення', auto_now_add=True)
+    updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
     
     class Meta:
         verbose_name = 'Оголошення'
@@ -247,3 +211,12 @@ class Announcement(models.Model):
     
     def __str__(self):
         return self.title
+    
+    def get_type_badge_class(self):
+        """Клас Bootstrap badge залежно від типу"""
+        badges = {
+            'general': 'bg-secondary',
+            'important': 'bg-danger',
+            'update': 'bg-info',
+        }
+        return badges.get(self.type, 'bg-secondary')

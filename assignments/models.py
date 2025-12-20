@@ -161,6 +161,8 @@ class Certificate(models.Model):
     certificate_id = models.CharField('ID сертифіката', max_length=100, unique=True, editable=False)
     student = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Студент', related_name='certificates')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='Курс')
+    final_grade = models.DecimalField('Підсумкова оцінка', max_digits=5, decimal_places=2, default=0)  # ДОДАТИ
+    pdf_file = models.FileField('PDF файл', upload_to='certificates/', blank=True, null=True)  # ДОДАТИ
     issued_at = models.DateTimeField('Дата видачі', auto_now_add=True)
     
     class Meta:
@@ -177,3 +179,16 @@ class Certificate(models.Model):
         if not self.certificate_id:
             self.certificate_id = f'CERT-{uuid.uuid4().hex[:12].upper()}'
         super().save(*args, **kwargs)
+    
+    def get_letter_grade(self):
+        """Буквена оцінка"""
+        if self.final_grade >= 90:
+            return 'A'
+        elif self.final_grade >= 80:
+            return 'B'
+        elif self.final_grade >= 70:
+            return 'C'
+        elif self.final_grade >= 60:
+            return 'D'
+        else:
+            return 'F'

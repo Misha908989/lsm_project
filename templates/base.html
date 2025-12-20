@@ -241,6 +241,13 @@
                             <i class="fas fa-chart-bar"></i> Мої оцінки
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'certificates' in request.path %}active{% endif %}" 
+                           href="{% url 'assignments:my_certificates' %}">
+                            <i class="fas fa-certificate"></i> Мої сертифікати
+                        </a>
+                    </li>
                     {% endif %}
                     
                     <!-- Мої курси (для викладачів) -->
@@ -258,15 +265,37 @@
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
                         <!-- Повідомлення -->
-                        <li class="nav-item">
-                            <a class="nav-link position-relative" href="#" title="Повідомлення">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link position-relative" href="#" 
+                            id="notificationsDropdown" 
+                            role="button" 
+                            data-bs-toggle="dropdown" 
+                            aria-expanded="false"
+                            title="Повідомлення">
                                 <i class="fas fa-bell"></i>
+                                {% if unread_notifications_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                    {{ unread_notifications_count }}
+                                </span>
+                                {% else %}
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
                                     0
                                 </span>
+                                {% endif %}
                             </a>
+                            
+                            <!-- Dropdown меню -->
+                            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 320px;">
+                                <div class="dropdown-header bg-primary text-white">
+                                    <i class="fas fa-bell"></i> Сповіщення
+                                </div>
+                                <div class="dropdown-item text-center text-muted py-4">
+                                    <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                                    <p class="mb-0 small">Немає нових сповіщень</p>
+                                </div>
+                            </div>
                         </li>
-                        
+                                                
                         <!-- Профіль (Dropdown) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" 

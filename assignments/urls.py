@@ -24,4 +24,11 @@ urlpatterns = [
     
     # Мої оцінки (студенти)
     path('my-grades/', views.my_grades, name='my_grades'),
+
+    # Сертифікати
+    path('certificates/my/', views.my_certificates, name='my_certificates'),
+    path('certificates/generate/<slug:course_slug>/', views.generate_certificate, name='generate_certificate'),
+    path('certificates/<str:certificate_id>/', views.certificate_detail, name='certificate_detail'),
+    path('certificates/<str:certificate_id>/download/', views.download_certificate, name='download_certificate'),
+    path('certificates/course/<slug:course_slug>/', views.course_certificates, name='course_certificates'),
 ]

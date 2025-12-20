@@ -10,7 +10,8 @@ from courses.models import Course, Enrollment
 from lessons.models import Lesson
 from .forms import AssignmentForm, SubmissionForm, GradeForm
 
-
+from .utils import issue_certificate
+from django.http import FileResponse, Http404
 
 class AssignmentListView(LoginRequiredMixin, ListView):
     """Список завдань курсу"""
@@ -390,3 +391,142 @@ def my_grades(request):
     }
     
     return render(request, 'assignments/my_grades.html', context)
+
+
+
+@login_required
+def my_certificates(request):
+    """Мої сертифікати (для студентів)"""
+    if request.user.profile.role != 'student':
+        messages.error(request, '❌ Тільки студенти можуть переглядати свої сертифікати')
+        return redirect('home')
+    
+    certificates = Certificate.objects.filter(
+        student=request.user
+    ).select_related('course').order_by('-issued_at')
+    
+    context = {
+        'certificates': certificates,
+    }
+    
+    return render(request, 'assignments/my_certificates.html', context)
+
+
+@login_required
+def generate_certificate(request, course_slug):
+    """Згенерувати сертифікат за курс"""
+    course = get_object_or_404(Course, slug=course_slug)
+    user = request.user
+    
+    # Перевірка чи користувач - студент
+    if user.profile.role != 'student':
+        messages.error(request, '❌ Тільки студенти можуть отримувати сертифікати')
+        return redirect('courses:course_detail', slug=course_slug)
+    
+    # Перевірка чи студент записаний на курс
+    try:
+        enrollment = Enrollment.objects.get(
+            student=user,
+            course=course,
+            is_active=True
+        )
+    except Enrollment.DoesNotExist:
+        messages.error(request, '❌ Ви не записані на цей курс')
+        return redirect('courses:course_detail', slug=course_slug)
+    
+    # Перевірка чи курс завершено (прогрес 100%)
+    if enrollment.progress < 100:
+        messages.error(request, f'❌ Для отримання сертифіката потрібно завершити курс. Ваш прогрес: {enrollment.progress}%')
+        return redirect('courses:course_detail', slug=course_slug)
+    
+    # Видати або оновити сертифікат
+    certificate = issue_certificate(user, course)
+    
+    if certificate:
+        messages.success(request, f'✅ Сертифікат успішно згенеровано! ID: {certificate.certificate_id}')
+        return redirect('assignments:certificate_detail', certificate_id=certificate.certificate_id)
+    else:
+        messages.error(request, '❌ Не вдалося згенерувати сертифікат')
+        return redirect('courses:course_detail', slug=course_slug)
+
+
+@login_required
+def certificate_detail(request, certificate_id):
+    """Детальна інформація про сертифікат"""
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    
+    # Перевірка прав доступу
+    if request.user.profile.role == 'student' and certificate.student != request.user:
+        messages.error(request, '❌ У вас немає доступу до цього сертифіката')
+        return redirect('home')
+    
+    context = {
+        'certificate': certificate,
+    }
+    
+    return render(request, 'assignments/certificate_detail.html', context)
+
+
+@login_required
+def download_certificate(request, certificate_id):
+    """Завантажити PDF сертифіката"""
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    
+    # Перевірка прав доступу
+    if request.user.profile.role == 'student' and certificate.student != request.user:
+        messages.error(request, '❌ У вас немає доступу до цього сертифіката')
+        return redirect('home')
+    
+    # Перевірка чи існує PDF
+    if not certificate.pdf_file:
+        messages.error(request, '❌ PDF файл не знайдено. Спробуйте згенерувати сертифікат знову.')
+        return redirect('assignments:certificate_detail', certificate_id=certificate_id)
+    
+    try:
+        # Відкрити файл
+        return FileResponse(
+            certificate.pdf_file.open('rb'),
+            as_attachment=True,
+            filename=f'certificate_{certificate.certificate_id}.pdf',
+            content_type='application/pdf'
+        )
+    except:
+        raise Http404("Файл сертифіката не знайдено")
+
+
+@login_required
+def course_certificates(request, course_slug):
+    """Список сертифікатів курсу (для викладачів та адмінів)"""
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    # Перевірка прав доступу
+    if not (request.user.profile.role == 'admin' or 
+            (request.user.profile.role == 'teacher' and course.instructor == request.user)):
+        messages.error(request, '❌ У вас немає доступу до цієї сторінки')
+        return redirect('courses:course_detail', slug=course_slug)
+    
+    certificates = Certificate.objects.filter(
+        course=course
+    ).select_related('student').order_by('-issued_at')
+    
+    # Статистика
+    total_students = Enrollment.objects.filter(course=course, is_active=True).count()
+    certificates_issued = certificates.count()
+    
+    if total_students > 0:
+        completion_rate = (certificates_issued / total_students) * 100
+    else:
+        completion_rate = 0
+    
+    avg_grade = certificates.aggregate(avg=Avg('final_grade'))['avg'] or 0
+    
+    context = {
+        'course': course,
+        'certificates': certificates,
+        'total_students': total_students,
+        'certificates_issued': certificates_issued,
+        'completion_rate': completion_rate,
+        'avg_grade': avg_grade,
+    }
+    
+    return render(request, 'assignments/course_certificates.html', context)

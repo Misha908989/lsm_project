@@ -66,7 +66,7 @@
     </div>
     
     <div class="card-body">
-        {% if enrollments %}
+        {% if enrollment_data %}
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -79,62 +79,62 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for enrollment in enrollments %}
+                    {% for data in enrollment_data %}
                     <tr>
                         <!-- Студент -->
                         <td>
                             <div class="d-flex align-items-center">
-                                {% if enrollment.student.profile.avatar %}
-                                <img src="{{ enrollment.student.profile.avatar.url }}" 
+                                {% if data.enrollment.student.profile.avatar %}
+                                <img src="{{ data.enrollment.student.profile.avatar.url }}" 
                                      class="rounded-circle me-2" 
                                      width="40" 
                                      height="40"
-                                     alt="{{ enrollment.student.username }}">
+                                     alt="{{ data.enrollment.student.username }}">
                                 {% else %}
                                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
                                      style="width: 40px; height: 40px;">
-                                    {{ enrollment.student.first_name.0|default:enrollment.student.username.0|upper }}
+                                    {{ data.enrollment.student.first_name.0|default:data.enrollment.student.username.0|upper }}
                                 </div>
                                 {% endif %}
                                 <div>
                                     <strong>
-                                        {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                                        {{ data.enrollment.student.get_full_name|default:data.enrollment.student.username }}
                                     </strong>
                                     <br>
-                                    <small class="text-muted">@{{ enrollment.student.username }}</small>
+                                    <small class="text-muted">@{{ data.enrollment.student.username }}</small>
                                 </div>
                             </div>
                         </td>
                         
                         <!-- Email -->
-                        <td>{{ enrollment.student.email }}</td>
+                        <td>{{ data.enrollment.student.email }}</td>
                         
                         <!-- Прогрес -->
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="progress flex-grow-1 me-2" style="height: 20px;">
                                     <div class="progress-bar 
-                                                {% if enrollment.progress < 30 %}bg-danger
-                                                {% elif enrollment.progress < 70 %}bg-warning
+                                                {% if data.enrollment.progress < 30 %}bg-danger
+                                                {% elif data.enrollment.progress < 70 %}bg-warning
                                                 {% else %}bg-success{% endif %}" 
                                          role="progressbar" 
-                                         style="width: {{ enrollment.progress }}%">
+                                         style="width: {{ data.enrollment.progress }}%">
                                     </div>
                                 </div>
-                                <strong>{{ enrollment.progress }}%</strong>
+                                <strong>{{ data.enrollment.progress }}%</strong>
                             </div>
                         </td>
                         
                         <!-- Дата запису -->
                         <td>
-                            <small>{{ enrollment.enrolled_at|date:"d.m.Y H:i" }}</small>
+                            <small>{{ data.enrollment.enrolled_at|date:"d.m.Y H:i" }}</small>
                         </td>
                         
                         <!-- Дії -->
                         <td>
                             <button class="btn btn-sm btn-outline-primary" 
                                     data-bs-toggle="modal" 
-                                    data-bs-target="#studentModal{{ enrollment.id }}">
+                                    data-bs-target="#studentModal{{ data.enrollment.id }}">
                                 <i class="fas fa-eye"></i> Деталі
                             </button>
                         </td>
@@ -214,4 +214,113 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Модальні вікна для студентів -->
+{% for data in enrollment_data %}
+<div class="modal fade" id="studentModal{{ data.enrollment.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user"></i> 
+                    {{ data.enrollment.student.get_full_name|default:data.enrollment.student.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Інформація про студента -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6><i class="fas fa-info-circle"></i> Основна інформація</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Username:</strong></td>
+                                <td>@{{ data.enrollment.student.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ data.enrollment.student.email }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата запису:</strong></td>
+                                <td>{{ data.enrollment.enrolled_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Статус:</strong></td>
+                                <td>
+                                    {% if data.enrollment.is_active %}
+                                    <span class="badge bg-success">Активний</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Неактивний</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Прогрес -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6><i class="fas fa-chart-line"></i> Прогрес навчання</h6>
+                        <div class="progress mb-2" style="height: 30px;">
+                            <div class="progress-bar 
+                                        {% if data.enrollment.progress < 30 %}bg-danger
+                                        {% elif data.enrollment.progress < 70 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                 style="width: {{ data.enrollment.progress }}%">
+                                <strong>{{ data.enrollment.progress }}%</strong>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Завершено уроків: 
+                            <strong>{{ data.completed_lessons }} / {{ lessons_count }}</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Оцінки -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <h6><i class="fas fa-star"></i> Оцінки за завдання</h6>
+                        {% if data.grades %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Завдання</th>
+                                        <th>Оцінка</th>
+                                        <th>Дата</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for grade in data.grades %}
+                                    <tr>
+                                        <td>{{ grade.submission.assignment.title }}</td>
+                                        <td>
+                                            <strong>{{ grade.score }}/{{ grade.submission.assignment.max_score }}</strong>
+                                            <small class="text-muted">({{ grade.get_letter_grade }})</small>
+                                        </td>
+                                        <td><small>{{ grade.graded_at|date:"d.m.Y" }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">Оцінок поки немає</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Закрити
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

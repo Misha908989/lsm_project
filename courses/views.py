@@ -8,7 +8,8 @@ from django.db.models import Q, Count
 from django.contrib.auth.models import User
 from .models import Course, Module, Enrollment, Announcement
 from .forms import CourseForm, ModuleFormSet
-from assignments.models import Assignment, Certificate
+from assignments.models import Assignment, Certificate ,Grade
+from lessons.models import LessonProgress, Lesson
 
 def home_view(request):
     """Головна сторінка з статистикою та новими курсами"""
@@ -367,51 +368,59 @@ def teacher_statistics(request, slug):
     return render(request, 'courses/teacher_statistics.html', context)
 
 @login_required
-def dashboard(request):
-    """Дашборд користувача залежно від ролі"""
+def teacher_statistics(request, slug):
+    """Статистика курсу для викладача"""
+    course = get_object_or_404(Course, slug=slug)
     user = request.user
-    role = user.profile.role
+    
+    # Перевірка прав доступу
+    if not (user.profile.role in ['teacher', 'admin'] or course.instructor == user):
+        messages.error(request, 'У вас немає доступу до цієї сторінки')
+        return redirect('courses:course_detail', slug=slug)
+    
+    # Отримати всі записи на курс
+    enrollments = Enrollment.objects.filter(
+        course=course,
+        is_active=True
+    ).select_related('student', 'student__profile').order_by('-enrolled_at')
+    
+    # Додати дані для кожного студента
+    enrollment_data = []
+    for enrollment in enrollments:
+        # Підрахувати завершені уроки
+        completed_lessons = LessonProgress.objects.filter(
+            lesson__module__course=course,
+            student=enrollment.student,
+            is_completed=True
+        ).count()
+        
+        # Отримати оцінки студента
+        grades = Grade.objects.filter(
+            submission__assignment__lesson__module__course=course,
+            submission__student=enrollment.student
+        ).select_related('submission__assignment')
+        
+        enrollment_data.append({
+            'enrollment': enrollment,
+            'completed_lessons': completed_lessons,
+            'grades': grades,
+        })
+    
+    # Статистика курсу
+    modules = course.module_set.all().order_by('order')
+    total_students = enrollments.count()
+    modules_count = modules.count()
+    lessons_count = Lesson.objects.filter(module__course=course).count()
+    assignments_count = Assignment.objects.filter(lesson__module__course=course).count()
     
     context = {
-        'role': role,
+        'course': course,
+        'enrollment_data': enrollment_data,
+        'total_students': total_students,
+        'modules': modules,
+        'modules_count': modules_count,
+        'lessons_count': lessons_count,
+        'assignments_count': assignments_count,
     }
     
-    if role == 'student':
-        context['enrolled_courses'] = Enrollment.objects.filter(
-            student=user,
-            is_active=True
-        ).select_related('course')[:5]
-        context['total_courses'] = Enrollment.objects.filter(
-            student=user,
-            is_active=True
-        ).count()
-        
-        return render(request, 'users/student_dashboard.html', context)
-    
-    elif role == 'teacher':
-        from courses.models import Course
-        courses = user.courses.all() 
-        
-        context['my_courses'] = courses[:5]
-        context['total_courses'] = courses.count()
-        context['total_students'] = Enrollment.objects.filter(
-            course__in=courses,
-            is_active=True
-        ).count()
-        
-        return render(request, 'users/teacher_dashboard.html', context)
-    
-    elif role == 'admin':
-        from courses.models import Course
-        from django.contrib.auth.models import User
-        
-        context['total_courses'] = Course.objects.count()
-        context['total_students'] = User.objects.filter(profile__role='student').count()
-        context['total_teachers'] = User.objects.filter(profile__role='teacher').count()
-        context['recent_enrollments'] = Enrollment.objects.select_related(
-            'student', 'course'
-        ).order_by('-enrolled_at')[:5]
-        
-        return render(request, 'users/admin_dashboard.html', context)
-    
-    return redirect('home')
+    return render(request, 'courses/teacher_statistics.html', context)
